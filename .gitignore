@@ -1,0 +1,7 @@
+*.rds
+*.RDS
+.RData
+data
+MNIST-data
+.Rdata
+.Rhistory
