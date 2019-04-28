@@ -2,16 +2,21 @@ library(dplyr)
 library(ggplot2)
 
 #Simulate multi-type Markov branching process
-bp = function(B, D, Z0, times){#B = birth rate matrix, D =  death rates, Z0 = inital population vector, times = vector of timepoints to record
+#B = birth rate matrix. Dimensions: N x (d+2) where N can be any number of offspring combinations with nonzero probability
+#B[i, 1..d] contains the number of offspring of each type, B[i,d+1] contains ancestor type. B[i,d+2] is the rate at which 
+                                                                                        #that combination will be born
+
+bp = function(B, Z0, times){#D =  death rates, Z0 = inital population vector, times = vector of timepoints to record
   tf = times[length(times)]
-  d = length(D)
+  d = length(Z0)
+  nEvents = nrow(B)
   Zt <- matrix(0, ncol = 2, nrow = length(times)) #store populations at different times
   t = 0
   Zt[1,] = Z0
   Z = Z0
   while(t < tf){
-    eventRates = c(matrix(B*Z,d*d,1), D*Z) #rates at which all births and deaths are occuring given current population 
-    lambda = sum(eventRates)
+    eventRates = B[,d+2]*Z[B[,d+1]]
+    lambda = sum(eventRates) #combined rate at which stuff is happening
     if(lambda == 0){ #extinction
       out = list(pop = pop,time = times)
       return(out)
@@ -20,14 +25,11 @@ bp = function(B, D, Z0, times){#B = birth rate matrix, D =  death rates, Z0 = in
     dt = rexp(1,lambda) #time until SOMETHING happends, don't know what yet
 
     event = which.max(rmultinom(1, 1, eventRates)) #choose which event happened according to probabilities
+    increment = B[event, 1:d]
+    Z = Z + increment #add in the new offspring
     
-    if(event > d*d){ #event was a death
-      Z[event - d*d] = Z[event - d*d]-1
-    }
-    else{ #event was a birth
-      born = ceiling(event/d)
-      Z[born] = Z[born]+1
-    }
+    parent = B[event, d+1]
+    Z[parent] = Z[parent] - 1 #kill the parent
     
     times_to_update <- (t < times) & (t + dt >= times)
     Zt[times_to_update,] <- rep(Z, sum(times_to_update))
@@ -38,9 +40,9 @@ bp = function(B, D, Z0, times){#B = birth rate matrix, D =  death rates, Z0 = in
 }
 
 
-bpsims <- function(B, D, Z0, times, reps)
+bpsims <- function(B, Z0, times, reps)
 {
-  x <- replicate(reps, bp(B, D, Z0, times))
+  x <- replicate(reps, bp(B, Z0, times))
   Z <- data.frame()
   for(i in 1:reps)
   {
@@ -51,11 +53,12 @@ bpsims <- function(B, D, Z0, times, reps)
 
 
 library(expm)
+B2 = rbind(c(2, 0, 1, .2),c(1,1,1,.02),c(1,1,2,.02),c(0,2,2,.2), c(0,0,1,.15),c(0,0,2,.15))
 B = matrix(c(.2,.02,.02,.2),ncol=2)# birth rate matrix
-D = c(.15,.15) #death rate vector
+D = c(.15,.15)
 d = length(D) # number of types
-Z0 = c(1000,500) # initial population vector
-Tf = 1 #final simulation timepoint
+Z0 = c(100,50) # initial population vector
+Tf = 5 #final simulation timepoint
 
 b = B/(rowSums(B) + D) #single individual offspring mean matrix
 diag(b) = sapply(1:d, function(i){(B[i,i] + sum(B[i,]))/(sum(B[i,]) + D[i])})
@@ -90,7 +93,7 @@ init_state = c(1,0,0,0,0,0,0,1) #inital values of second moments
 times = seq(0,5)
 
 out = ode(y = init_state, times, func = second_moment_de, parms = 0)
-dt = array(out[2,-1],c(d,d*d)) #second moment array
+dt = array(out[nrow(out),-1],c(d,d*d)) #second moment array
 
 Mu = t(M)%*%Z0 #final mean population matrix
 Sigma = matrix(Z0%*%dt,c(d,d*d)) #final population covariance matrix
@@ -101,7 +104,7 @@ for(i in 1:d){
   }
 }
 
-X = bpsims(B,D,Z0,times = times, reps = 50)
+X = bpsims(B2, Z0,times = times, reps = 1000)
 X <- X %>% group_by(rep)
 names(X)[3:4] <- c("t1_cells", "t2_cells")
 X <- X %>% group_by(rep) %>% mutate(t1_cells_prev = lag(t1_cells), t2_cells_prev = lag(t2_cells),
@@ -111,21 +114,21 @@ X <- X %>% group_by(rep) %>% mutate(t1_cells_prev = lag(t1_cells), t2_cells_prev
 # Remove NA values
 X <- X %>% filter(!is.na(t1_cells_prev))
 
-pop_vec = cbind(X$t1_cells,X$t2_cells)
-init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
-model_dtimes = sort(unique(times[-1] - times[-length(times)]))
+#pop_vec = cbind(X$t1_cells,X$t2_cells)
+#init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
+#model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
-mean(X[X$times == 1,]$t1_cells)
-mean(X[X$times == 1,]$t2_cells)
-var(X[X$times == 1,]$t1_cells)
-var(X[X$times == 1,]$t2_cells)
-cov(X[X$times == 1,]$t1_cells,X[X$times == 1,]$t2_cells)
+#mean(X[X$times == 1,]$t1_cells)
+#mean(X[X$times == 1,]$t2_cells)
+#var(X[X$times == 1,]$t1_cells)
+#var(X[X$times == 1,]$t2_cells)
+#cov(X[X$times == 1,]$t1_cells,X[X$times == 1,]$t2_cells)
 
-library(rstan)
-options(mc.cores = parallel::detectCores())
-stan_dat <- list(d = d, N = nrow(pop_vec),  pop_vec = pop_vec, init_pop = init_pop, Tn = 1, times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
-fit <- stan_model(file = "multitype_birth_death.stan")
-fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8))
-s = extract(fit.data)
+#library(rstan)
+#options(mc.cores = parallel::detectCores())
+#stan_dat <- list(d = d, N = nrow(pop_vec),  pop_vec = pop_vec, init_pop = init_pop, Tn = 1, times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
+#fit <- stan_model(file = "multitype_birth_death.stan")
+#fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8))
+#s = extract(fit.data)
 
 
