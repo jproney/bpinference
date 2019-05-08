@@ -60,11 +60,14 @@ d = length(D) # number of types
 Z0 = c(100,50) # initial population vector
 Tf = 5 #final simulation timepoint
 
-b = B/(rowSums(B) + D) #single individual offspring mean matrix
-diag(b) = sapply(1:d, function(i){(B[i,i] + sum(B[i,]))/(sum(B[i,]) + D[i])})
-
+b = matrix(rep(0,d*d),d,d)
+lamb = rep(0,d)
+for(i in 1:d){
+  b[i,] = colSums(B2[B2[,d+1] == i, 1:d]*B2[B2[,d+1] == i,d+2])/sum(B2[B2[,d+1] == i,d+2]) #weighted average of columns gives expected progeny
+  lamb[i] = sum(B2[B2[,d+1] == i,d+2])
+}
 #Diff EQ: M(t) = exp(At)
-A =  B - diag(d)*(D)
+A =  lamb*(b - diag(d))
 M = expm(A*Tf)
 
 C = array(rep(0,d**3), c(d, d, d)); #matrix of second derivatives of offspring PGF
@@ -73,6 +76,7 @@ for(i in 1:d){
   C[,i,i] = b[i,]
   diag(C[,,i]) = 0
   C[i,i,i] = (3*B[i,i] + sum(B[i,]))/(sum(B[i,]) + D[i]) - b[i,i] #- b[i,i]**2
+  
 }
 
 library(deSolve)
