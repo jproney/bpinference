@@ -2,10 +2,9 @@ library(dplyr)
 library(ggplot2)
 
 #Simulate multi-type Markov branching process
-#B = birth rate matrix. Dimensions: N x (d+2) where N can be any number of offspring combinations with nonzero probability
-#B[i, 1..d] contains the number of offspring of each type, B[i,d+1] contains ancestor type. B[i,d+2] is the rate at which 
-                                                                                        #that combination will be born
-
+#B = birth rate matrix. Dimensions: N x (2d) where N can be any number of offspring combinations with nonzero probability
+#B[i, 1..d] contains the number of offspring of each type, B[i,d+1..2d] the rate at which 
+                                    #that combination will be born from each ancestor type
 bp = function(B, Z0, times){#D =  death rates, Z0 = inital population vector, times = vector of timepoints to record
   tf = times[length(times)]
   d = length(Z0)
@@ -15,7 +14,7 @@ bp = function(B, Z0, times){#D =  death rates, Z0 = inital population vector, ti
   Zt[1,] = Z0
   Z = Z0
   while(t < tf){
-    eventRates = B[,d+2]*Z[B[,d+1]]
+    eventRates = c(sweep(B[,(d+1):(2*d)],2,Z,'*'))
     lambda = sum(eventRates) #combined rate at which stuff is happening
     if(lambda == 0){ #extinction
       out = list(pop = pop,time = times)
@@ -25,10 +24,10 @@ bp = function(B, Z0, times){#D =  death rates, Z0 = inital population vector, ti
     dt = rexp(1,lambda) #time until SOMETHING happends, don't know what yet
 
     event = which.max(rmultinom(1, 1, eventRates)) #choose which event happened according to probabilities
-    increment = B[event, 1:d]
+    increment = B[(event-1)%%(nEvents)+1, 1:d]
     Z = Z + increment #add in the new offspring
     
-    parent = B[event, d+1]
+    parent = floor((event-1)/nEvents)+1
     Z[parent] = Z[parent] - 1 #kill the parent
     
     times_to_update <- (t < times) & (t + dt >= times)
@@ -53,30 +52,24 @@ bpsims <- function(B, Z0, times, reps)
 
 
 library(expm)
-B2 = rbind(c(2, 0, 1, .2),c(1,1,1,.02),c(1,1,2,.02),c(0,2,2,.2), c(0,0,1,.15),c(0,0,2,.15))
-B = matrix(c(.2,.02,.02,.2),ncol=2)# birth rate matrix
+B = rbind(c(2, 0, .2, 0),c(1,1,.02,.02),c(0,2,0,.2), c(0,0,.15,.15))
 D = c(.15,.15)
 d = length(D) # number of types
 Z0 = c(100,50) # initial population vector
 Tf = 5 #final simulation timepoint
 
-b = matrix(rep(0,d*d),d,d)
-lamb = rep(0,d)
-for(i in 1:d){
-  b[i,] = colSums(B2[B2[,d+1] == i, 1:d]*B2[B2[,d+1] == i,d+2])/sum(B2[B2[,d+1] == i,d+2]) #weighted average of columns gives expected progeny
-  lamb[i] = sum(B2[B2[,d+1] == i,d+2])
-}
+lamb = colSums(B[,(d+1):(2*d)])
+b = t(t(B[,1:d])%*%B[,(d+1):(2*d)])/lamb
 #Diff EQ: M(t) = exp(At)
 A =  lamb*(b - diag(d))
 M = expm(A*Tf)
 
 C = array(rep(0,d**3), c(d, d, d)); #matrix of second derivatives of offspring PGF
 for(i in 1:d){
-  C[i,,i] = b[i,]
-  C[,i,i] = b[i,]
-  diag(C[,,i]) = 0
-  C[i,i,i] = (3*B[i,i] + sum(B[i,]))/(sum(B[i,]) + D[i]) - b[i,i] #- b[i,i]**2
-  
+  i_mat = t(t(B[,1:d]*B[,i])%*%B[,(d+1):(2*d)])/lamb
+  i_mat[,i] = i_mat[,i] - b[,i]
+  C[,i,] = t(i_mat)
+  C[i,,] = t(i_mat)
 }
 
 library(deSolve)
@@ -85,8 +78,8 @@ second_moment_de = function(t, state, parameters){
   mt = expm(A*t)
   Beta = matrix(rep(0,d**3), nrow = d, ncol = d*d); #Beta array for second moment ODE
   for(i in 1:d){
-    lamb = sum(B[i,]) + D[i]
-    Beta[i,] = c(lamb*t(mt)%*%C[,,i]%*%mt) #vectorized computation of Beta
+    ai = lamb[i]
+    Beta[i,] = c(ai*t(mt)%*%C[,,i]%*%mt) #vectorized computation of Beta
   }
   x = matrix(state,c(d,d*d))
   x_prime = c(A%*%x + Beta)
@@ -108,7 +101,7 @@ for(i in 1:d){
   }
 }
 
-X = bpsims(B2, Z0,times = times, reps = 1000)
+X = bpsims(B, Z0,times = times, reps = 1000)
 X <- X %>% group_by(rep)
 names(X)[3:4] <- c("t1_cells", "t2_cells")
 X <- X %>% group_by(rep) %>% mutate(t1_cells_prev = lag(t1_cells), t2_cells_prev = lag(t2_cells),
