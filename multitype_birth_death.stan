@@ -15,24 +15,33 @@ functions{
     matrix[d,d] mt_prime;      //first moment derivatives
     matrix[d,d*d] dt;          //second moments at time t. Each col is an (j,k) covariance pair. Row i is ancestor
     matrix[d,d*d] dt_prime;    //second moment derivatives. Each col is an (j,k) covariance pair. Row i is ancestor
+    matrix[m,d] E_tmp;
+    matrix[d,d] b2[d];
     
     //unpack the parameter matrices from theta vector
     E = to_matrix(head(theta, m*d), m, d);
-    R = to_matrix(segment(theta,m*d+1, m*d),m,d)
-    b = R'*E;
+    R = to_matrix(segment(theta,m*d+1, m*d),m,d);
     
     for(i in 1:d){
-      b[i] = B[i]/(sum(B[i]) + D[i]);
-      b[i,i] = (B[i,i] + sum(B[i]))/(sum(B[i]) + D[i]);
+      b[i] = (R'[i]*E)/sum(col(R,i)); //normalize
+    }
+    
+    
+    for(a in 1:d){//the ancestor type we are multiplying by
+      for(i in 1:d){
+        E_tmp[i] = E[i]*E[i,a];
+      }
+      
+      for(i in 1:d){
+        b2[a][i] = (R'[i]*E_tmp)/sum(col(R,i)); //computing the TRANSPOSE of previous convention
+      }
     }
     
     for(i in 1:d){
       for(j in 1:d){
-        c[i][i,j] = b[i,j];
-        c[i][j,i] = b[i,j];
-        c[i][j,j] = 0;
+        c[i][j] = b2[j][i];
+        c[i][j,j] = b2[j][i,j] - b[i,j];//subtract first moment off the diagonal
       }
-      c[i][i,i] = (3*B[i,i] + sum(B[i]))/(sum(B[i]) + D[i]) - b[i,i];
     }
     
     //unpack the moment matrices from the state vector
@@ -40,7 +49,7 @@ functions{
     dt = to_matrix(segment(state,d*d+1, d*d*d),d,d*d, 1);//read this in row-major order
     
     for(i in 1:d){
-      real lamb = sum(B[i]) + D[i];
+      real lamb = sum(col(R,i));
       Beta[i] = to_row_vector(lamb*(mt')*c[i]*mt);
     }
 
@@ -86,14 +95,14 @@ parameters{
   matrix<lower=0, upper=1>[m,d] R; //birth rate matrix
 }
 transformed parameters{
-  real theta[m*2*d] = append_array(to_array_1d(E),to_array_1d(R));
+  real theta[m*2*d] =  append_array(to_array_1d(E),to_array_1d(R));
 }
 model{
    real moments[l,d*d + d*d*d]; //raw single-ancestor moments vector evolving over time
-   matrix[d,d] m_t[N]; //fisrt moment matrices
-   matrix[d,d*d] d_t[N]; //second moments indexing goes (j,k,i) 
-   vector[d] Mu_t[N]; //mean vectors for each datapoint
-   matrix[d,d] Sigma_t[N]; //covariance matrices for each datapoint
+   matrix[d,d] m_t[n]; //fisrt moment matrices
+   matrix[d,d*d] d_t[n]; //second moments indexing goes (j,k,i) 
+   vector[d] Mu_t[n]; //mean vectors for each datapoint
+   matrix[d,d] Sigma_t[n]; //covariance matrices for each datapoint
    matrix[d,d] temp; //for copying stuff
   
   //put priors on everything
@@ -105,8 +114,8 @@ model{
   
   moments = integrate_ode_rk45(moment_ode, init_state, 0, times, theta, rdata, idata);
   
-  for(n in 1:N){
-    int t = timesIdx[n];
+  for(k in 1:n){
+    int t = timesIdx[k];
     m_t[n] = to_matrix(head(moments[t],d*d), d,d);
     d_t[n] = to_matrix(segment(moments[t],d*d+1, d*d*d),d,d*d);
     
