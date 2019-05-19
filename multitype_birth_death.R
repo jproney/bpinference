@@ -83,6 +83,7 @@ second_moment_de = function(t, state, parameters){
   }
   x = matrix(state,c(d,d*d))
   x_prime = c(A%*%x + Beta)
+  print(x_prime)
   return(list(x_prime))
 }
 
@@ -111,9 +112,9 @@ X <- X %>% group_by(rep) %>% mutate(t1_cells_prev = lag(t1_cells), t2_cells_prev
 # Remove NA values
 X <- X %>% filter(!is.na(t1_cells_prev))
 
-#pop_vec = cbind(X$t1_cells,X$t2_cells)
-#init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
-#model_dtimes = sort(unique(times[-1] - times[-length(times)]))
+pop_vec = cbind(X$t1_cells,X$t2_cells)
+init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
+model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
 #mean(X[X$times == 1,]$t1_cells)
 #mean(X[X$times == 1,]$t2_cells)
@@ -121,11 +122,11 @@ X <- X %>% filter(!is.na(t1_cells_prev))
 #var(X[X$times == 1,]$t2_cells)
 #cov(X[X$times == 1,]$t1_cells,X[X$times == 1,]$t2_cells)
 
-#library(rstan)
-#options(mc.cores = parallel::detectCores())
-#stan_dat <- list(d = d, N = nrow(pop_vec),  pop_vec = pop_vec, init_pop = init_pop, Tn = 1, times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
-#fit <- stan_model(file = "multitype_birth_death.stan")
-#fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8))
-#s = extract(fit.data)
+library(rstan)
+options(mc.cores = parallel::detectCores())
+stan_dat <- list(d = d, m = ncol(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], R_mu = B[,(d+1):(2*d)], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
+fit <- stan_model(file = "multitype_birth_death.stan")
+fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 1, refresh = 1)
+s = extract(fit.data)
 
 
