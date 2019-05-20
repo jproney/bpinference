@@ -124,7 +124,7 @@ model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
 library(rstan)
 options(mc.cores = parallel::detectCores())
-stan_dat <- list(d = d, m = ncol(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], R_mu = B[,(d+1):(2*d)], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
+stan_dat <- list(d = d, m = ncol(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
 fit <- stan_model(file = "multitype_birth_death.stan")
 fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 1, refresh = 1)
 s = extract(fit.data)
