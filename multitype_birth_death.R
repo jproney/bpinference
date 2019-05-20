@@ -55,7 +55,7 @@ library(expm)
 B = rbind(c(2, 0, .2, 0),c(1,1,.02,.02),c(0,2,0,.2), c(0,0,.15,.15))
 D = c(.15,.15)
 d = length(D) # number of types
-Z0 = c(100,50) # initial population vector
+Z0 = c(1000,500) # initial population vector
 Tf = 5 #final simulation timepoint
 
 lamb = colSums(B[,(d+1):(2*d)])
@@ -102,7 +102,7 @@ for(i in 1:d){
   }
 }
 
-X = bpsims(B, Z0,times = times, reps = 1000)
+X = bpsims(B, Z0,times = times, reps = 50)
 X <- X %>% group_by(rep)
 names(X)[3:4] <- c("t1_cells", "t2_cells")
 X <- X %>% group_by(rep) %>% mutate(t1_cells_prev = lag(t1_cells), t2_cells_prev = lag(t2_cells),
@@ -126,7 +126,7 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 stan_dat <- list(d = d, m = ncol(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
 fit <- stan_model(file = "multitype_birth_death.stan")
-fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 1, refresh = 1)
+fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1)
 s = extract(fit.data)
 
 
