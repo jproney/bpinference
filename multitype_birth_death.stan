@@ -16,7 +16,7 @@ functions{
     matrix[d,d*d] dt;          //second moments at time t. Each col is an (j,k) covariance pair. Row i is ancestor
     matrix[d,d*d] dt_prime;    //second moment derivatives. Each col is an (j,k) covariance pair. Row i is ancestor
     matrix[m,d] E_tmp;
-    matrix[d,d] b2[d];
+    matrix[d,d] b2;
     real lambda[d];
     
     //unpack the parameter matrices from theta vector
@@ -36,16 +36,12 @@ functions{
       }
       
       for(i in 1:d){
-        b2[a][i] = (R'[i]*E_tmp)/lambda[i]; //computing the TRANSPOSE of previous convention
+        b2[i] = (R'[i]*E_tmp)/lambda[i]; //computing the TRANSPOSE of previous convention
+        c[i][a] = b2[i];
+        c[i][a,a] = b2[i,a] - b[i,a];
       }
     }
     
-    for(i in 1:d){
-      for(j in 1:d){
-        c[i][j] = b2[j][i];
-        c[i][j,j] = b2[j][i,j] - b[i,j];//subtract first moment off the diagonal
-      }
-    }
     
     //unpack the moment matrices from the state vector
     mt = to_matrix(head(state, d*d), d, d, 0);
