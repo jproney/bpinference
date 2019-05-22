@@ -107,7 +107,7 @@ model{
   
   //put priors on everything
   for(i in 1:m){
-      R[i] ~ normal(0, 1);
+      R[i] ~ uniform(0, 1);
   }
   
   moments = integrate_ode_rk45(moment_ode, init_state, 0, times, theta, rdata, idata);

@@ -52,7 +52,7 @@ bpsims <- function(B, Z0, times, reps)
 
 
 library(expm)
-B = rbind(c(2, 0, .2, 0),c(1,1,.02,.02),c(0,2,0,.2), c(0,0,.15,.15))
+B = rbind(c(2, 0, .2, 0),c(1,1,.1,.05),c(0,2,0,.2), c(0,0,.25,.2))
 D = c(.15,.15)
 d = length(D) # number of types
 Z0 = c(1000,500) # initial population vector
@@ -126,7 +126,7 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 stan_dat <- list(d = d, m = ncol(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
 fit <- stan_model(file = "multitype_birth_death.stan")
-fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 1, refresh = 1)
+fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1)
 s = extract(fit.data)
 
 
