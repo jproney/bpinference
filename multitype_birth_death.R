@@ -116,6 +116,11 @@ pop_vec = cbind(X$t1_cells,X$t2_cells)
 init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
 model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
+Pri_mu = matrix(rep(0, nrow(B)*d), c(nrow(B),d))
+Pri_sig = matrix(rep(.25, nrow(B)*d), c(nrow(B),d))
+Pri_sig[1,2] = 0;
+Pri_sig[3,1] = 0;
+
 #mean(X[X$times == 1,]$t1_cells)
 #mean(X[X$times == 1,]$t2_cells)
 #var(X[X$times == 1,]$t1_cells)
@@ -124,7 +129,7 @@ model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
 library(rstan)
 options(mc.cores = parallel::detectCores())
-stan_dat <- list(d = d, m = ncol(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)))
+stan_dat <- list(d = d, m = nrow(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)), P_mu = Pri_mu, P_sig = Pri_sig)
 fit <- stan_model(file = "multitype_birth_death.stan")
 fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1)
 s = extract(fit.data)

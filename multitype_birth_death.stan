@@ -69,6 +69,8 @@ data{
   matrix[n,d] pop_vec; //endpoint populations
   matrix[n,d] init_pop; //inital population vectors
   matrix<lower=0>[m,d] E; //birth events matrix
+  matrix<lower=0>[m,d] P_mu; //prior means
+  matrix<lower=0>[m,d] P_sig; //prior variances
   int timesIdx[n]; //index of the duration of each run
   real times[l]; //the actual times
 }
@@ -107,7 +109,7 @@ model{
   
   //put priors on everything
   for(i in 1:m){
-      R[i] ~ uniform(0, 1);
+      R[i] ~ normal(P_mu[i], P_sig[i]); //these are vectors!
   }
   
   moments = integrate_ode_rk45(moment_ode, init_state, 0, times, theta, rdata, idata);
