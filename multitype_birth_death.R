@@ -2,19 +2,26 @@ library(dplyr)
 library(ggplot2)
 
 #Simulate multi-type Markov branching process
-#B = birth rate matrix. Dimensions: N x (2d) where N can be any number of offspring combinations with nonzero probability
-#B[i, 1..d] contains the number of offspring of each type, B[i,d+1..2d] the rate at which 
-                                    #that combination will be born from each ancestor type
-bp = function(B, Z0, times){#D =  death rates, Z0 = inital population vector, times = vector of timepoints to record
+#B = offspring matrix. Dimensions: N x d where N can be any number of offspring combinations with nonzero probability.
+#E[i] has number of each offspring produced in birth event i
+#R = rate matrix. Dimensions: N x 1. R[i] has rate of bith event i.
+#P = parent matrix. Dimensions: N x 1. P[i] has parent type of birth event i.
+
+bp = function(E, R, P, Z0, times){#Z0 = inital population vector, times = vector of timepoints to record
   tf = times[length(times)]
   d = length(Z0)
-  nEvents = nrow(B)
+  nEvents = nrow(E)
   Zt <- matrix(0, ncol = 2, nrow = length(times)) #store populations at different times
   t = 0
   Zt[1,] = Z0
   Z = Z0
+  
+  #Expand the rate matrix
+  R_prime = matrix(rep(0,nEvents*d), c(nEvents,d))
+  R_prime[cbind(1:nEvents, P)] = R
+
   while(t < tf){
-    eventRates = c(sweep(B[,(d+1):(2*d)],2,Z,'*'))
+    eventRates = R_prime%*%Z
     lambda = sum(eventRates) #combined rate at which stuff is happening
     if(lambda == 0){ #extinction
       out = list(pop = pop,time = times)
@@ -24,10 +31,14 @@ bp = function(B, Z0, times){#D =  death rates, Z0 = inital population vector, ti
     dt = rexp(1,lambda) #time until SOMETHING happends, don't know what yet
 
     event = which.max(rmultinom(1, 1, eventRates)) #choose which event happened according to probabilities
-    increment = B[(event-1)%%(nEvents)+1, 1:d]
+    if(event > nEvents){
+      print(eventRates)
+      print(event)
+    }
+    increment = E[event,]
     Z = Z + increment #add in the new offspring
     
-    parent = floor((event-1)/nEvents)+1
+    parent = P[event]
     Z[parent] = Z[parent] - 1 #kill the parent
     
     times_to_update <- (t < times) & (t + dt >= times)
@@ -39,9 +50,9 @@ bp = function(B, Z0, times){#D =  death rates, Z0 = inital population vector, ti
 }
 
 
-bpsims <- function(B, Z0, times, reps)
+bpsims <- function(E, R, P, Z0, times, reps)
 {
-  x <- replicate(reps, bp(B, Z0, times))
+  x <- replicate(reps, bp(E, R, P, Z0, times))
   Z <- data.frame()
   for(i in 1:reps)
   {
@@ -52,21 +63,27 @@ bpsims <- function(B, Z0, times, reps)
 
 
 library(expm)
-B = rbind(c(2, 0, .2, 0),c(1,1,.1,.05),c(0,2,0,.2), c(0,0,.25,.2))
-D = c(.15,.15)
-d = length(D) # number of types
-Z0 = c(1000,500) # initial population vector
+d=2
+E =  rbind(c(2, 0),c(1,1),c(1,1), c(0,2), c(0,0),c(0,0))
+P = c(1, 1, 2, 2, 1, 2)
+R = c(.2, .1, .05, .2, .25, .2)
+Z0 = c(100,50) # initial population vector
 Tf = 5 #final simulation timepoint
 
-lamb = colSums(B[,(d+1):(2*d)])
-b = t(t(B[,1:d])%*%B[,(d+1):(2*d)])/lamb
+R_prime = matrix(rep(0,nrow(E)*d), c(nrow(E),d))
+R_prime[cbind(1:nrow(E), P)] = R
+
+lamb = colSums(R_prime)
+b = t(t(E)%*%R_prime)/lamb
+
 #Diff EQ: M(t) = exp(At)
 A =  lamb*(b - diag(d))
 M = expm(A*Tf)
 
 C = array(rep(0,d**3), c(d, d, d)); #matrix of second derivatives of offspring PGF
+
 for(i in 1:d){
-  i_mat = t(t(B[,1:d]*B[,i])%*%B[,(d+1):(2*d)])/lamb
+  i_mat = t(t(E*E[,i])%*%R_prime)/lamb
   i_mat[,i] = i_mat[,i] - b[,i]
   C[,i,] = t(i_mat)
   C[i,,] = t(i_mat)
@@ -102,7 +119,7 @@ for(i in 1:d){
   }
 }
 
-X = bpsims(B, Z0,times = times, reps = 50)
+X = bpsims(E, R, P, Z0,times = times, reps = 5000)
 X <- X %>% group_by(rep)
 names(X)[3:4] <- c("t1_cells", "t2_cells")
 X <- X %>% group_by(rep) %>% mutate(t1_cells_prev = lag(t1_cells), t2_cells_prev = lag(t2_cells),
@@ -116,10 +133,6 @@ pop_vec = cbind(X$t1_cells,X$t2_cells)
 init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
 model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
-Pri_mu = matrix(rep(0, nrow(B)*d), c(nrow(B),d))
-Pri_sig = matrix(rep(.25, nrow(B)*d), c(nrow(B),d))
-Pri_sig[1,2] = 0;
-Pri_sig[3,1] = 0;
 
 #mean(X[X$times == 1,]$t1_cells)
 #mean(X[X$times == 1,]$t2_cells)
@@ -127,17 +140,17 @@ Pri_sig[3,1] = 0;
 #var(X[X$times == 1,]$t2_cells)
 #cov(X[X$times == 1,]$t1_cells,X[X$times == 1,]$t2_cells)
 
-library(rstan)
-options(mc.cores = parallel::detectCores())
-stan_dat <- list(d = d, m = nrow(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)), P_mu = Pri_mu, P_sig = Pri_sig)
-fit <- stan_model(file = "multitype_birth_death.stan")
-fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1)
-s = extract(fit.data)
+#library(rstan)
+#options(mc.cores = parallel::detectCores())
+#stan_dat <- list(d = d, m = nrow(B), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = B[,1:d], times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)), P_mu = Pri_mu, P_sig = Pri_sig)
+#fit <- stan_model(file = "multitype_birth_death.stan")
+#fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1)
+#s = extract(fit.data)
 
-t = format(Sys.time(), "%a_%b_%d_%H:%M:%S_%Y")
-saveRDS(fit.data, paste("saves/",t, "_",toString(d), "type_samples.rds", sep=""))
-saveRDS(B, paste("saves/",t, "_", toString(d), "type_truth.rds", sep=""))
-saveRDS(stan_dat, paste("saves/",t, "_", toString(d), "type_data.rds", sep=""))
+#t = format(Sys.time(), "%a_%b_%d_%H:%M:%S_%Y")
+#saveRDS(fit.data, paste("saves/",t, "_",toString(d), "type_samples.rds", sep=""))
+#saveRDS(B, paste("saves/",t, "_", toString(d), "type_truth.rds", sep=""))
+#saveRDS(stan_dat, paste("saves/",t, "_", toString(d), "type_data.rds", sep=""))
 
 
 
