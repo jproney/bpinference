@@ -69,8 +69,9 @@ data{
   matrix[n,d] pop_vec; //endpoint populations
   matrix[n,d] init_pop; //inital population vectors
   matrix<lower=0>[m,d] E; //birth events matrix
-  matrix<lower=0>[m,d] P_mu; //prior means
-  matrix<lower=0>[m,d] P_sig; //prior variances
+  int<lower=0> P[m]; //parents for each birth event
+  vector<lower=0>[m] Pri_mu; //prior means for each rate
+  vector<lower=0>[m] Pri_sig; //prior variances for each rate
   int timesIdx[n]; //index of the duration of each run
   real times[l]; //the actual times
 }
@@ -93,10 +94,16 @@ transformed data{
   
 }
 parameters{
-  matrix<lower=0, upper=1>[m,d] R; //birth rate matrix
+  vector<lower=0, upper=1>[m] R; //birth rate matrix
 }
 transformed parameters{
-  real theta[m*2*d] =  append_array(to_array_1d(E),to_array_1d(R));
+  matrix[m,d] R_prime;
+  real theta[m*2*d];
+  R_prime = rep_matrix(0, m,d);
+  for(i in 1:m){
+    R_prime[i, P[i]] = R[i];
+  }
+  theta =  append_array(to_array_1d(E),to_array_1d(R_prime));
 }
 model{
    real moments[l,d*d + d*d*d]; //raw single-ancestor moments vector evolving over time
@@ -108,9 +115,7 @@ model{
   
   
   //put priors on everything
-  for(i in 1:m){
-      R[i] ~ normal(P_mu[i], P_sig[i]); //these are vectors!
-  }
+  R ~ normal(Pri_mu, Pri_sig);
   
   moments = integrate_ode_rk45(moment_ode, init_state, 0, times, theta, rdata, idata);
   
