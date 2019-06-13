@@ -129,4 +129,11 @@ fit <- stan_model(file = "multitype_birth_death.stan")
 fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1)
 s = extract(fit.data)
 
+t = format(Sys.time(), "%a_%b_%d_%H:%M:%S_%Y")
+saveRDS(fit.data, paste("saves/",t, "_",toString(d), "type_samples.rds", sep=""))
+saveRDS(B, paste("saves/",t, "_", toString(d), "type_truth.rds", sep=""))
+saveRDS(stan_dat, paste("saves/",t, "_", toString(d), "type_data.rds", sep=""))
+
+
+
 
