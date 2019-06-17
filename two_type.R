@@ -24,7 +24,10 @@ mom = calculate_moments(E,P,R,Z0,Tf)
 
 library(rstan)
 options(mc.cores = parallel::detectCores())
-stan_dat <- list(d = d, m = nrow(E), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = E, P = P, times = as.array(model_dtimes), timesIdx = as.numeric(factor(X$dtimes)), Pri_mu = rep(0, nrow(E)), Pri_sig = rep(.25, nrow(E)))
+stan_dat <- list(d = d, m = nrow(E), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = E, P = P, 
+                 times = as.array(model_dtimes), times_idx = as.numeric(factor(X$dtimes)), Pri_mu = rep(0, nrow(E)), Pri_sig = rep(.25, nrow(E)), 
+                      c = 1, func_type = rep(1,nrow(E)), var_idx = rep(1,nrow(pop_vec)), function_var = array(0,1))
+
 fit <- stan_model(file = "multitype_birth_death.stan")
 fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1)
 s = extract(fit.data)
