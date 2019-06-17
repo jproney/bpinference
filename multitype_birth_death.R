@@ -2,10 +2,9 @@ library(dplyr)
 library(ggplot2)
 
 #Simulate multi-type Markov branching process
-#B = offspring matrix. Dimensions: N x d where N can be any number of offspring combinations with nonzero probability.
-#E[i] has number of each offspring produced in birth event i
-#R = rate matrix. Dimensions: N x 1. R[i] has rate of bith event i.
-#P = parent matrix. Dimensions: N x 1. P[i] has parent type of birth event i.
+#E = event matrix. E[i] has number of each offspring produced in birth event i
+#R = rate vector. Dimensions: N x 1. R[i] has rate of bith event i.
+#P = parent vector. Dimensions: N x 1. P[i] has parent type of birth event i.
 
 bp = function(E, R, P, Z0, times){#Z0 = inital population vector, times = vector of timepoints to record
   tf = times[length(times)]
@@ -24,7 +23,7 @@ bp = function(E, R, P, Z0, times){#Z0 = inital population vector, times = vector
     eventRates = R_prime%*%Z #multiply rates by pop sizes
     lambda = sum(eventRates) #combined rate at which stuff is happening
     if(lambda == 0){ #extinction
-      out = list(pop = pop,time = times)
+      Zt[times[times > t],] = rep(tail(Zt[rowSums(Zt) >= 0,],1), sum(times > t)) #fill the rest of the vector with last  datapoint
       return(out)
     }
     
