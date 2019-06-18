@@ -67,7 +67,7 @@ data{
   int<lower=0> n; //number of datapoints
   int<lower=0> l; //number of distinct timepoints.
   int<lower=0> c; //number of distinct dependent variable levels
-  int<lower=0> ub; //global upper bound on rates in model
+  real<lower=0> ub; //global upper bound on rates in model
   matrix[n,d] pop_vec; //endpoint populations
   matrix[n,d] init_pop; //inital population vectors
   matrix<lower=0>[m,d] E; //birth events matrix
