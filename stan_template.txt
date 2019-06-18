@@ -67,6 +67,7 @@ data{
   int<lower=0> n; //number of datapoints
   int<lower=0> l; //number of distinct timepoints.
   int<lower=0> c; //number of distinct dependent variable levels
+  int<lower=0> q; //number of dependent variables
   real<lower=0> ub; //global upper bound on rates in model
   matrix[n,d] pop_vec; //endpoint populations
   matrix[n,d] init_pop; //inital population vectors
@@ -77,7 +78,7 @@ data{
   int<lower=0> func_type[m]; //functional dependence.
   int<lower=0> func_size[m]; //number of args in each function
   int var_idx[n]; //index of the dependent variable value of each run
-  real function_var[c]; //the actual dependent variable values
+  real function_var[c,q]; //the actual dependent variable values
   int times_idx[n]; //index of the duration of each run
   real times[l]; //the actual times
 }

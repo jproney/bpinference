@@ -1,6 +1,6 @@
 #Auto-generates a Stan file for inferring a model where rates have specified functional dependencies
 
-#functional_deps is an array of strings encoding functions of one variable 'x' and constant parameters 'c1','c2',... 'c9'
+#functional_deps is an array of strings encoding functions of  variable 'x1, x2, ..., x9' and constant parameters 'c1','c2',... 'c9'
 #filename is name of generated Stan file
 generate = function(functional_deps, filename){
   
@@ -41,8 +41,9 @@ exp_to_stan = function(exprn){
     }
     return(sprintf("R[event_idx[k]+%d]", num))
   }
-  if(deparse(first) == "x"){
-    return("function_var[l]")
+  if(!is.na(str_extract(deparse(first),"^x[1-9]$"))){ # variables
+    num = strtoi(substr(str_extract(deparse(first),"^x[1-9]$"),2,2))
+    return(sprintf("function_var[l, %d]", num))
   }
   else{
     stop("Invalid expression!")
