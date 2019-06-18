@@ -22,10 +22,14 @@ model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
 mom = calculate_moments(E,P,R,Z0,Tf)
 
+Pri_mu = rep(0, nrow(E))
+Pri_sig = rep(.25, nrow(E))
+scale = 1/max(Pri_sig)
+
 library(rstan)
 options(mc.cores = parallel::detectCores())
 stan_dat <- list(d = d, m = nrow(E), n = nrow(pop_vec), l=1,  pop_vec = pop_vec, init_pop = init_pop, E = E, P = P, 
-                 times = as.array(model_dtimes), times_idx = as.numeric(factor(X$dtimes)), Pri_mu = rep(0, nrow(E)), Pri_sig = rep(.25, nrow(E)), 
+                 times = as.array(model_dtimes)/scale, times_idx = as.numeric(factor(X$dtimes)), Pri_mu = Pri_mu*scale, Pri_sig = Pri_sig*scale, 
                       c = 1, func_type = rep(1,nrow(E)), var_idx = rep(1,nrow(pop_vec)), function_var = array(0,1))
 
 fit <- stan_model(file = "multitype_birth_death.stan")

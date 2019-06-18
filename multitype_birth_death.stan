@@ -106,7 +106,7 @@ transformed data{
   
 }
 parameters{
-  vector<lower=0, upper=1>[total_parms] R; //parameters of birth/death rate functions
+  vector<lower=0, upper=2>[total_parms] R; //parameters of birth/death rate functions
 }
 transformed parameters{
   matrix[m,d] R_prime;
