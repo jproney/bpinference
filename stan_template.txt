@@ -68,13 +68,10 @@ data{
   int<lower=0> l; //number of distinct timepoints.
   int<lower=0> c; //number of distinct dependent variable levels
   int<lower=0> q; //number of dependent variables
-  real<lower=0> ub; //global upper bound on rates in model
   matrix[n,d] pop_vec; //endpoint populations
   matrix[n,d] init_pop; //inital population vectors
   matrix<lower=0>[m,d] E; //birth events matrix
   int<lower=0> P[m]; //parents for each birth event
-  vector<lower=0>[m] Pri_mu; //prior means for each rate
-  vector<lower=0>[m] Pri_sig; //prior variances for each rate
   int<lower=0> func_type[m]; //functional dependence.
   int<lower=0> func_size[m]; //number of args in each function
   int var_idx[n]; //index of the dependent variable value of each run
@@ -109,7 +106,7 @@ transformed data{
   
 }
 parameters{
-  vector<lower=0, upper=ub>[total_parms] R; //parameters of birth/death rate functions
+  vector[total_parms] R; //parameters of birth/death rate functions
 }
 transformed parameters{
   matrix[m,d] R_prime;

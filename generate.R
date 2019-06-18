@@ -1,8 +1,9 @@
 #Auto-generates a Stan file for inferring a model where rates have specified functional dependencies
 
 #functional_deps is an array of strings encoding functions of  variable 'x1, x2, ..., x9' and constant parameters 'c1','c2',... 'c9'
+#priors is a m-dimensional list of with the priors for all parameters associated with a given rate
 #filename is name of generated Stan file
-generate = function(functional_deps, filename){
+generate = function(functional_deps, priors, filename){
   
   template =  readChar("stan_template.txt", file.info("stan_template.txt")$size) #load the template file
   nFunc = length(functional_deps)
