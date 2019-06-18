@@ -35,8 +35,11 @@ exp_to_stan = function(exprn){
     return(exp_to_stan(exprn[[2]]))
   }
   if(!is.na(str_extract(deparse(first),"^c[1-9]$"))){ # function parameters
-    num = substr(str_extract(deparse(first),"^c[1-9]$"),2,2)
-    return(sprintf("R[event_idx[k]+%s]", num))
+    num = strtoi(substr(str_extract(deparse(first),"^c[1-9]$"),2,2))-1
+    if(num == 0){
+      return(sprintf("R[event_idx[k]]", num))
+    }
+    return(sprintf("R[event_idx[k]+%d]", num))
   }
   if(deparse(first) == "x"){
     return("function_var[l]")

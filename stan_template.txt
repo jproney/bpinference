@@ -74,7 +74,8 @@ data{
   int<lower=0> P[m]; //parents for each birth event
   vector<lower=0>[m] Pri_mu; //prior means for each rate
   vector<lower=0>[m] Pri_sig; //prior variances for each rate
-  int<lower=0> func_type[m]; //functional dependence. 1 = constant (1 param), 2 = linear (2 params), 3 = quadratic (3 params), 4 = logistic (4 params)
+  int<lower=0> func_type[m]; //functional dependence.
+  int<lower=0> func_size[m]; //number of args in each function
   int var_idx[n]; //index of the dependent variable value of each run
   real function_var[c]; //the actual dependent variable values
   int times_idx[n]; //index of the duration of each run
@@ -92,7 +93,7 @@ transformed data{
   
   for(i in 1:m){
     event_idx[i] = count;
-    count = count + func_type[i];
+    count = count + func_size[i];
   }
   
   //evaluations of the moments at t=0. Mostly zeros, since type a -> b is impossible in 0 time
