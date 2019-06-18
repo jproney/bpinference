@@ -1,18 +1,23 @@
 #Auto-generates a Stan file for inferring a model where rates have specified functional dependencies
 
 #functional_deps is an array of strings encoding functions of  variable 'x1, x2, ..., x9' and constant parameters 'c1','c2',... 'c9'
-#priors is a m-dimensional list of with the priors for all parameters associated with a given rate
+#priors is a m-dimensional list of with the prior objects for all parameters associated with a given rate
+#example prior object: p = alist(name="gamma",params=c(1,1))
 #filename is name of generated Stan file
 generate = function(functional_deps, priors, filename){
   
   template =  readChar("stan_template.txt", file.info("stan_template.txt")$size) #load the template file
   nFunc = length(functional_deps)
-  subs = rep(0,nFunc)
+  funcs = rep(0,nFunc)
   for(i in 1:nFunc){
     # convert the expression
     exprn = functional_deps[[i]]
     stanstr = exp_to_stan(exprn)
-    subs[i] = sprintf("\t\t\tif(func_type[k] == %d){\n\t\t\t\tR_prime[k, P[k]] = %s; \n\t\t\t}\n",i,stanstr) 
+    funcs[i] = sprintf("\t\t\tif(func_type[k] == %d){\n\t\t\t\tR_prime[k, P[k]] = %s; \n\t\t\t}\n",i,stanstr) 
+  }
+  
+  for(dist in 1:length(priors)){
+    
   }
   write(sprintf(template, paste(subs, collapse="")), filename)
 }
