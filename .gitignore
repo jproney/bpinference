@@ -5,3 +5,5 @@ data
 MNIST-data
 .Rdata
 .Rhistory
+test.stan
+

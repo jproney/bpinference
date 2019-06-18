@@ -1,0 +1,47 @@
+#Auto-generates a Stan file for inferring a model where rates have specified functional dependencies
+
+#functional_deps is an array of strings encoding functions of one variable 'x' and constant parameters 'c1','c2',... 'c9'
+#filename is name of generated Stan file
+generate = function(functional_deps, filename){
+  
+  template =  readChar("stan_template.txt", file.info("stan_template.txt")$size) #load the template file
+  nFunc = length(functional_deps)
+  subs = rep(0,nFunc)
+  for(i in 1:nFunc){
+    # convert the expression
+    exprn = functional_deps[[i]]
+    stanstr = exp_to_stan(exprn)
+    subs[i] = sprintf("\t\t\tif(func_type[k] == %d){\n\t\t\t\tR_prime[k, P[k]] = %s; \n\t\t\t}\n",i,stanstr) 
+  }
+  write(sprintf(template, paste(subs, collapse="")), filename)
+}
+
+# takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
+exp_to_stan = function(exprn){
+  if(is.atomic(exprn) || is.name(exprn)){
+    first = exprn
+  }
+  else{
+    first = exprn[[1]]
+  }
+  
+  if(is.atomic(first)){
+    return(first)
+  }
+  if(deparse(first) %in% c('+','-','/','*','^')){ #allowed operations
+    return(paste("(",exp_to_stan(exprn[[2]]),")", deparse(first), "(", exp_to_stan(exprn[[3]]), ")", sep=" "))
+  }
+  if(deparse(first) == '('){
+    return(exp_to_stan(exprn[[2]]))
+  }
+  if(!is.na(str_extract(deparse(first),"^c[1-9]$"))){ # function parameters
+    num = substr(str_extract(deparse(first),"^c[1-9]$"),2,2)
+    return(sprintf("R[event_idx[k]+%s]", num))
+  }
+  if(deparse(first) == "x"){
+    return("function_var[l]")
+  }
+  else{
+    stop("Invalid expression!")
+  }
+}
