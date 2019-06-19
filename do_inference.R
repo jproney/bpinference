@@ -8,7 +8,7 @@
 # C = matrix of dependent variables that vary from run to run
 # functions = vector of function expressions specifying how each rate depends on the dependent variables in the C matrix
 # Priors = priors for all of the parameters. Should be in the form of a list of vectors
-# Priors should be a m-dimensional list, and each list entry should have a vector of priors for the parameters associated with that rate
+# Priors should be a z-dimensional list, and each list entry should have a prior for that parameter
 # if C or functions is left as NA, inference is performed directly on the rates as parameters
 
 do_inference = function(final_pop, init_pop, E, P, times, priors, C = NA, functions = NA){

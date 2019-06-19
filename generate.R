@@ -10,15 +10,18 @@ generate = function(functional_deps, priors, filename){
   template =  readChar("stan_template.txt", file.info("stan_template.txt")$size) #load the template file
   nFunc = length(functional_deps)
   funcs = rep(0,nFunc)
-  for(i in 1:nFunc){
-    # convert the expression
-    exprn = functional_deps[[i]]
-    stanstr = exp_to_stan(exprn)
-    funcs[i] = sprintf("\t\t\tif(func_type[k] == %d){\n\t\t\t\tR[k, P[k]] = %s; \n\t\t\t}\n",i,stanstr) 
-  }
+  
   dists = readLines("allowed_distributions.txt") #load distributions file
   nPri = length(priors)
   priorStrs = rep(0, nPri)
+  
+  for(i in 1:nFunc){
+    # convert the expression
+    exprn = functional_deps[[i]]
+    stanstr = exp_to_stan(exprn, nPri)
+    funcs[i] = sprintf("\t\t\tif(func_type[k] == %d){\n\t\t\t\tR[k, P[k]] = %s; \n\t\t\t}\n",i,stanstr) 
+  }
+
   for(p in 1:nPri){
     ind = which(!is.na(str_extract(dists, paste("^",priors[[p]]$name, " ",sep=""))))
     if(length(ind) > 0){
@@ -42,7 +45,7 @@ generate = function(functional_deps, priors, filename){
 }
 
 # takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
-exp_to_stan = function(exprn){
+exp_to_stan = function(exprn, maxParams){
   if(is.atomic(exprn) || is.name(exprn)){
     first = exprn
   }
@@ -54,7 +57,7 @@ exp_to_stan = function(exprn){
     return(first)
   }
   if(deparse(first) %in% c('+','-','/','*','^')){ #allowed operations
-    return(paste("(",exp_to_stan(exprn[[2]]),")", deparse(first), "(", exp_to_stan(exprn[[3]]), ")", sep=" "))
+    return(paste("(",exp_to_stan(exprn[[2]], maxParams),")", deparse(first), "(", exp_to_stan(exprn[[3]], maxParams), ")", sep=" "))
   }
   if(deparse(first) == '('){
     return(exp_to_stan(exprn[[2]]))
@@ -62,6 +65,9 @@ exp_to_stan = function(exprn){
   if(!is.na(str_extract(deparse(first),"^c[1-9]$"))){ # function parameters
     s = str_extract(deparse(first),"^c[1-9]+$")
     num = strtoi(substr(s,2,nchar(s)))
+    if(num > maxParams){
+      stop(paste("There is no prior for parameter",s,sep=" "))
+    }
     return(sprintf("Theta[%d]", num))
   }
   if(!is.na(str_extract(deparse(first),"^x[1-9]$"))){ # variables
