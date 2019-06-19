@@ -73,8 +73,6 @@ data{
   matrix[n,d] init_pop; //inital population vectors
   matrix<lower=0>[m,d] E; //birth events matrix
   int<lower=0> P[m]; //parents for each birth event
-  int<lower=0> func_type[m]; //functional dependence.
-  int<lower=0> func_size[m]; //number of args in each function
   int var_idx[n]; //index of the dependent variable value of each run
   real function_var[c,q]; //the actual dependent variable values
   int times_idx[n]; //index of the duration of each run
@@ -106,9 +104,12 @@ transformed parameters{
   real theta[c,m*2*d];
   for(i in 1:c){
     R = rep_matrix(0, m,d);
-    for(k in 1:m){
+    
+    //BEGIN AUTO-GENERATED CODE FOR FUNCTIONAL DEPENDENCIES
+    
 %s
-    }
+    //END AUTO-GENERATED CODE FOR FUNCTIONAL DEPENDENCIES
+    
     theta[c] =  append_array(to_array_1d(E),to_array_1d(R));
   }
 }
@@ -121,8 +122,10 @@ model{
   matrix[d,d] temp; //for copying stuff
   
   
-  //put priors on everything
+  //BEGIN AUTO-GENERATED CODE FOR PRIORS
+  
 %s
+  //END AUTO-GENERATED CODE FOR PRIORS
   
   for(i in 1:c){
     moments[c] = integrate_ode_rk45(moment_ode, init_state, 0, times, theta[i], rdata, idata);

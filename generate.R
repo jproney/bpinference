@@ -19,7 +19,7 @@ generate = function(functional_deps, priors, filename){
     # convert the expression
     exprn = functional_deps[[i]]
     stanstr = exp_to_stan(exprn, nPri)
-    funcs[i] = sprintf("\t\t\tif(func_type[k] == %d){\n\t\t\t\tR[k, P[k]] = %s; \n\t\t\t}\n",i,stanstr) 
+    funcs[i] = sprintf("\t\tR[%d, P[%d]] = %s;\n",i,i,stanstr) 
   }
 
   for(p in 1:nPri){
@@ -73,7 +73,7 @@ exp_to_stan = function(exprn, maxParams){
   if(!is.na(str_extract(deparse(first),"^x[1-9]$"))){ # variables
     s = str_extract(deparse(first),"^x[1-9]+$")
     num = strtoi(substr(s,2,nchar(s)))
-    return(sprintf("function_var[l, %d]", num))
+    return(sprintf("function_var[i, %d]", num))
   }
   else{
     stop("Invalid expression!")
