@@ -68,6 +68,7 @@ data{
   int<lower=0> l; //number of distinct timepoints.
   int<lower=0> c; //number of distinct dependent variable levels
   int<lower=0> q; //number of dependent variables
+  int<lower=0> z; //number of parameters
   matrix[n,d] pop_vec; //endpoint populations
   matrix[n,d] init_pop; //inital population vectors
   matrix<lower=0>[m,d] E; //birth events matrix
@@ -80,19 +81,11 @@ data{
   real times[l]; //the actual times
 }
 transformed data{
-  int total_parms = sum(func_type);
-  int event_idx[m]; //vector of indices for which parameters pretain to which birth event
-  int count = 1;
   real rdata[0];
   int idata[2];
   real init_state[d*d + d*d*d]; //state is unrolled vector of first + second moments
   real m_init[d,d] = rep_array(0.0,d,d); //first moments
   real d_init[d,d,d] = rep_array(0.0,d,d,d); //second moments
-  
-  for(i in 1:m){
-    event_idx[i] = count;
-    count = count + func_size[i];
-  }
   
   //evaluations of the moments at t=0. Mostly zeros, since type a -> b is impossible in 0 time
   for(i in 1:d){
@@ -106,26 +99,26 @@ transformed data{
   
 }
 parameters{
-  vector[total_parms] R; //parameters of birth/death rate functions
+  vector[z] Theta; //parameters of birth/death rate functions
 }
 transformed parameters{
-  matrix[m,d] R_prime;
+  matrix[m,d] R;
   real theta[c,m*2*d];
   for(i in 1:c){
-    R_prime = rep_matrix(0, m,d);
+    R = rep_matrix(0, m,d);
     for(k in 1:m){
 %s
     }
-    theta[c] =  append_array(to_array_1d(E),to_array_1d(R_prime));
+    theta[c] =  append_array(to_array_1d(E),to_array_1d(R));
   }
 }
 model{
-   real moments[c,l,d*d + d*d*d]; //raw single-ancestor moments vector evolving over time
-   matrix[d,d] m_t; //fisrt moment matrices
-   matrix[d,d*d] d_t; //second moments indexing goes (j,k,i) 
-   vector[d] Mu_t; //mean vectors for each datapoint
-   matrix[d,d] Sigma_t; //covariance matrices for each datapoint
-   matrix[d,d] temp; //for copying stuff
+  real moments[c,l,d*d + d*d*d]; //raw single-ancestor moments vector evolving over time
+  matrix[d,d] m_t; //fisrt moment matrices
+  matrix[d,d*d] d_t; //second moments indexing goes (j,k,i) 
+  vector[d] Mu_t; //mean vectors for each datapoint
+  matrix[d,d] Sigma_t; //covariance matrices for each datapoint
+  matrix[d,d] temp; //for copying stuff
   
   
   //put priors on everything
