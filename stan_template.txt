@@ -129,7 +129,7 @@ model{
   
   
   //put priors on everything
-  R ~ normal(Pri_mu, Pri_sig);
+%s
   
   for(i in 1:c){
     moments[c] = integrate_ode_rk45(moment_ode, init_state, 0, times, theta[i], rdata, idata);

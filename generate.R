@@ -1,8 +1,9 @@
 #Auto-generates a Stan file for inferring a model where rates have specified functional dependencies
+library(stringr)
 
 #functional_deps is an array of strings encoding functions of  variable 'x1, x2, ..., x9' and constant parameters 'c1','c2',... 'c9'
-#priors is a m-dimensional list of with the prior objects for all parameters associated with a given rate
-#example prior object: p = alist(name="gamma",params=c(1,1))
+#priors is list of with prior objects for all parameters in order of the rate they contribute to
+#example prior object: p = list(name="gamma",params=c(1,1))
 #filename is name of generated Stan file
 generate = function(functional_deps, priors, filename){
   
@@ -15,11 +16,29 @@ generate = function(functional_deps, priors, filename){
     stanstr = exp_to_stan(exprn)
     funcs[i] = sprintf("\t\t\tif(func_type[k] == %d){\n\t\t\t\tR_prime[k, P[k]] = %s; \n\t\t\t}\n",i,stanstr) 
   }
-  
-  for(dist in 1:length(priors)){
-    
+  dists = readLines("allowed_distributions.txt") #load distributions file
+  nPri = length(priors)
+  priorStrs = rep(0, nPri)
+  for(p in 1:nPri){
+    ind = which(!is.na(str_extract(dists, paste("^",priors[[p]]$name, " ",sep=""))))
+    if(ind){
+      nparm = strtoi(str_extract(dists[ind], "[1-9]+"))
+      if(nparm != length(priors[[p]]$params)){
+        stop("Incorrect number of parameters")
+      }
+      constraints = str_extract(dists[ind], "[_+]+")
+      for(i in 1:nparm){
+        if(priors[[p]]$params[i] <= 0 && substr(constraints,i,i) == "+"){
+          stop("Negative parameter not allowed here!")
+        }
+      }
+    }
+    else{
+      stop("Invalid prior name!")
+    }
+    priorStrs[p] = sprintf("\tR[%d] ~ %s(%s)\n", p, priors[[p]]$name, paste(priors[[p]]$params, collapse=","))
   }
-  write(sprintf(template, paste(subs, collapse="")), filename)
+  write(sprintf(template, paste(funcs, collapse=""),  paste(priorStrs,collapse="")), filename)
 }
 
 # takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
