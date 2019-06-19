@@ -37,10 +37,14 @@ do_inference = function(final_pop, init_pop, E, P, times, priors, C = NA, functi
     }
   }
   
+  library(rstan)
+  options(mc.cores = parallel::detectCores())
   generate(functions, priors, "multitype_birth_death.stan") #generate the stan file
-  stan_dat <- list(d = d, m = m, n = n, l=l, c = c, q=q, z=z, E = E, P = P, 
+  stan_dat = list(d = d, m = m, n = n, l=l, c = c, q=q, z=z, E = E, P = P, 
                    pop_vec = final_pop, init_pop = init_pop,
-                   times = times_unique, times_idx =  times_idx, 
+                   times = array(times_unique,1), times_idx =  times_idx, 
                    function_var = C_unique, var_idx = var_idx)
-  
+  fit = stan_model(file = "multitype_birth_death.stan")
+  fit.data = sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init="0")
+  return(fit.data)
 }

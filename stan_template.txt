@@ -97,7 +97,7 @@ transformed data{
   
 }
 parameters{
-  vector[z] Theta; //parameters of birth/death rate functions
+  vector<lower=0>[z] Theta; //parameters of birth/death rate functions
 }
 transformed parameters{
   matrix[m,d] R;

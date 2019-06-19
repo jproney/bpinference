@@ -19,3 +19,4 @@ rayleigh 1 +
 pareto 2 ++
 pareto_type_2 3 _++
 beta 2 ++
+uniform 2 __

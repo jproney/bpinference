@@ -18,25 +18,9 @@ X <- X %>% filter(!is.na(t1_cells_prev))
 
 pop_vec = cbind(X$t1_cells,X$t2_cells)
 init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
-model_dtimes = sort(unique(times[-1] - times[-length(times)]))
 
 mom = calculate_moments(E,P,R,Z0,Tf)
 
-Pri_mu = rep(0, nrow(E))
-Pri_sig = rep(.25, nrow(E))
-scale = .25/max(Pri_sig)
+prior = rep(list(list(name = "exponential", params=c(2))),nrow(E))
 
-library(rstan)
-options(mc.cores = parallel::detectCores())
-stan_dat <- list(d = d, m = nrow(E), n = nrow(pop_vec), l=1, ub=2, q=1, pop_vec = pop_vec, init_pop = init_pop, E = E, P = P, 
-                 times = as.array(model_dtimes)/scale, times_idx = as.numeric(factor(X$dtimes)), Pri_mu = Pri_mu*scale, Pri_sig = Pri_sig*scale, 
-                      c = 1, func_type = rep(1,nrow(E)), func_size = rep(1,nrow(E)), var_idx = rep(1,nrow(pop_vec)), function_var = matrix(0,1,1))
-
-fit <- stan_model(file = "multitype_birth_death.stan")
-fit.data <- sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init="0")
-s = extract(fit.data)
-
-t = format(Sys.time(), "%a_%b_%d_%H:%M:%S_%Y")
-saveRDS(fit.data, paste("saves/",t, "_",toString(d), "type_samples.rds", sep=""))
-saveRDS(R, paste("saves/",t, "_", toString(d), "type_truth.rds", sep=""))
-saveRDS(stan_dat, paste("saves/",t, "_", toString(d), "type_data.rds", sep=""))
+fit.data = do_inference(E = E, P= P, final_pop = pop_vec, init_pop = init_pop, times = X$dtimes, priors = prior)
