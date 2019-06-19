@@ -18,28 +18,29 @@ do_inference = function(final_pop, init_pop, E, P, times, priors, C = NA, functi
   times_unique = unique(times) #distinct timepoints
   l = length(times_unique) #number of distinct durations
   times_idx = match(times,times_unique) #index of time duration for each datapoint
+  z = length(priors) #total number of parameters
   
   if(!is.na(C) && !is.na(functions)){
     C_unique = C[!duplicated(C),] #unique combinations of dependent variables
     c = nrow(C_unique) #number of distinct combinations of dependent variables
     q = ncol(C_unique) #number of different dependent variables
     var_idx = apply(C,1,function(r){which.min(abs(rowSums(sweep(C_unique,2,r))))})  #indices of unique dependent variable combinations
-    z = length(priors)
   }
   else{
-    C = matrix(0, n,1)
+    C_unique = matrix(0, 1,1)
     c = 1
     q = 1
     var_idx = rep(1, n)
+    functions = rep(0,m)
     for(i in 1:m){
-      
+      functions[i] = parse(text=sprintf("c%d", i))
     }
   }
   
   generate(functions, priors, "multitype_birth_death.stan") #generate the stan file
-  stan_dat <- list(d = d, m = m, n = n, l=l, c = c, E = E, P = P, 
+  stan_dat <- list(d = d, m = m, n = n, l=l, c = c, q=q, z=z, E = E, P = P, 
                    pop_vec = final_pop, init_pop = init_pop,
                    times = times_unique, times_idx =  times_idx, 
-                   var_idx = var_idx, function_var = C_unique)
+                   function_var = C_unique, var_idx = var_idx)
   
 }
