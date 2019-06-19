@@ -21,7 +21,7 @@ create_stan_data = function(final_pop, init_pop, E, P, times, priors, C = NA, fu
   z = length(priors) #total number of parameters
   
   if(!is.na(C) && !is.na(functions)){
-    C_unique = C[!duplicated(C),] #unique combinations of dependent variables
+    C_unique = matrix(C[!duplicated(C),],ncol = ncol(C)) #unique combinations of dependent variables
     c = nrow(C_unique) #number of distinct combinations of dependent variables
     q = ncol(C_unique) #number of different dependent variables
     var_idx = apply(C,1,function(r){which.min(abs(rowSums(sweep(C_unique,2,r))))})  #indices of unique dependent variable combinations

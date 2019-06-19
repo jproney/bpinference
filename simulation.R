@@ -48,7 +48,7 @@ bp = function(E, R, P, Z0, times){#Z0 = inital population vector, times = vector
   return(Zt)
 }
 
-
+# simulate multiple processes with same parameters and save to a dataframe
 bpsims <- function(E, R, P, Z0, times, reps)
 {
   x <- replicate(reps, bp(E, R, P, Z0, times))
@@ -60,6 +60,25 @@ bpsims <- function(E, R, P, Z0, times, reps)
   return(Z)
 }
 
-
+# simulating multiple branching processes where process rates vary as a function of dependent variables
+# C = dependent variable matrix. Dimensions c x q where q is nuber of dependent variables
+# functions = vector of functions that calculate each model rate based on dependent vars. Dimensions m x 1
+# reps = vector of times to replicate each distinct condition. Dimensions c x 1
+bpsims_modeling = function(E,P,Z0, C, functions, times, reps){
+  Z <- data.frame()
+  for(i in 1:nrow(C)){
+    R = rep(0,ncol(E))
+    for(j in 1:nrow(E)){
+      R[j] = functions[[j]](C[i,])
+    }
+    x <- replicate(reps[i], bp(E, R, P, Z0, times)) 
+    for(k in 1:reps[i])
+    {
+      Z <- rbind(Z, data.frame(cbind(times, rep = k, variable_state = i, data.frame(x[,,i]), C[i,])))
+    }
+  }
+  
+  return(Z)
+}
 
 

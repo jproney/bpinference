@@ -27,5 +27,5 @@ ranges = matrix(rep(c(0,2),nrow(E)),nrow(E),2,byrow = T)
 out = create_stan_data(E = E, P= P, final_pop = pop_vec, init_pop = init_pop, times = X$dtimes, priors = prior)
 init = uniform_initialize(ranges, 4)
 
-options(mc.cores = parallel::detectCores())
-fit.data = sampling(out$model, data = out$data, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init =init)
+#options(mc.cores = parallel::detectCores())
+#fit.data = sampling(out$model, data = out$data, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init =init)

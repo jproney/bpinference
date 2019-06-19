@@ -60,7 +60,7 @@ exp_to_stan = function(exprn, maxParams){
     return(paste("(",exp_to_stan(exprn[[2]], maxParams),")", deparse(first), "(", exp_to_stan(exprn[[3]], maxParams), ")", sep=" "))
   }
   if(deparse(first) == '('){
-    return(exp_to_stan(exprn[[2]]))
+    return(exp_to_stan(exprn[[2]], maxParams))
   }
   if(!is.na(str_extract(deparse(first),"^c[1-9]$"))){ # function parameters
     s = str_extract(deparse(first),"^c[1-9]+$")
