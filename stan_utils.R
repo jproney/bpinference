@@ -11,7 +11,7 @@
 # Priors should be a z-dimensional list, and each list entry should have a prior for that parameter
 # if C or functions is left as NA, inference is performed directly on the rates as parameters
 
-do_inference = function(final_pop, init_pop, E, P, times, priors, C = NA, functions = NA){
+create_stan_data = function(final_pop, init_pop, E, P, times, priors, C = NA, functions = NA){
   m = nrow(E) #number of events
   d = ncol(E) #number of types
   n = nrow(final_pop) #number of datapoints
@@ -36,15 +36,19 @@ do_inference = function(final_pop, init_pop, E, P, times, priors, C = NA, functi
       functions[i] = parse(text=sprintf("c%d", i))
     }
   }
-  
+
   library(rstan)
-  options(mc.cores = parallel::detectCores())
   generate(functions, priors, "multitype_birth_death.stan") #generate the stan file
   stan_dat = list(d = d, m = m, n = n, l=l, c = c, q=q, z=z, E = E, P = P, 
                    pop_vec = final_pop, init_pop = init_pop,
                    times = array(times_unique,1), times_idx =  times_idx, 
                    function_var = C_unique, var_idx = var_idx)
   fit = stan_model(file = "multitype_birth_death.stan")
-  fit.data = sampling(fit, data = stan_dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init="0")
-  return(fit.data)
+  return(list(model = fit, data = stan_dat))
+}
+
+# create Stan initialization list by selecting initial values uniformly at ranom.
+# ranges is a z x 2 matrix, where z is the number of parameters. Each row has contains a lower and upper bound for initialization.
+uniform_initialize = function(ranges, nchains){
+  return(replicate(nchains, list(list(Theta = apply(ranges,1,function(s){runif(1,s[1],s[2])})))))
 }

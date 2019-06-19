@@ -22,12 +22,12 @@ functions{
     //unpack the parameter matrices from theta vector
     E = to_matrix(head(theta, m*d), m, d);
     R = to_matrix(segment(theta,m*d+1, m*d),m,d);
-    
+
     for(i in 1:d){
       lambda[i] = sum(col(R,i));
-      b[i] = (R'[i]*E)/lambda[i]; //normalize
-      A[i] = b[i]*lambda[i];
-      A[i,i] = (b[i,i] - 1)*lambda[i];
+      b[i] = (R'[i]*E);
+      A[i] = b[i];
+      A[i,i] = b[i,i] - lambda[i];
     }
     
     for(a in 1:d){//the ancestor type we are multiplying by
@@ -36,7 +36,7 @@ functions{
       }
       
       for(i in 1:d){
-        b2[i] = (R'[i]*E_tmp)/lambda[i]; //computing the TRANSPOSE of previous convention
+        b2[i] = (R'[i]*E_tmp); //computing the TRANSPOSE of previous convention
         c[i][a] = b2[i];
         c[i][a,a] = b2[i,a] - b[i,a];
       }
@@ -48,7 +48,7 @@ functions{
     dt = to_matrix(segment(state,d*d+1, d*d*d),d,d*d, 1);//read this in row-major order
     
     for(i in 1:d){
-      Beta[i] = to_row_vector(lambda[i]*(mt')*c[i]*mt);
+      Beta[i] = to_row_vector((mt')*c[i]*mt);
     }
 
     //first moment ODE
@@ -97,7 +97,7 @@ transformed data{
   
 }
 parameters{
-  vector<lower=0>[z] Theta; //parameters of birth/death rate functions
+  vector[z] Theta; //parameters of birth/death rate functions
 }
 transformed parameters{
   matrix[m,d] R;

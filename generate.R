@@ -3,7 +3,7 @@ library(stringr)
 
 #functional_deps is an array of strings encoding functions of  variable 'x1, x2, ...' and constant parameters 'c1','c2',...
 #priors is list of with prior objects for all parameters in order of the rate they contribute to
-#example prior object: p = list(name="gamma",params=c(1,1))
+#example prior object: p = list(name="gamma",params=c(1,1), init = c(0,3))
 #filename is name of generated Stan file
 generate = function(functional_deps, priors, filename){
   

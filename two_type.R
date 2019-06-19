@@ -22,5 +22,10 @@ init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
 mom = calculate_moments(E,P,R,Z0,Tf)
 
 prior = rep(list(list(name = "exponential", params=c(2))),nrow(E))
+ranges = matrix(rep(c(0,2),nrow(E)),nrow(E),2,byrow = T)
 
-fit.data = do_inference(E = E, P= P, final_pop = pop_vec, init_pop = init_pop, times = X$dtimes, priors = prior)
+out = create_stan_data(E = E, P= P, final_pop = pop_vec, init_pop = init_pop, times = X$dtimes, priors = prior)
+init = uniform_initialize(ranges, 4)
+
+options(mc.cores = parallel::detectCores())
+fit.data = sampling(out$model, data = out$data, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init =init)
