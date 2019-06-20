@@ -97,7 +97,10 @@ transformed data{
   
 }
 parameters{
-  vector[z] Theta; //parameters of birth/death rate functions
+    //BEGIN AUTO-GENERATED CODE FOR PARAMETER DECLARATIONS
+    
+%s
+    //END AUTO-GENERATED CODE FOR PARAMETER DECLARATIONS
 }
 transformed parameters{
   matrix[m,d] R;

@@ -21,7 +21,7 @@ init_pop = cbind(X$t1_cells_prev,X$t2_cells_prev)
 
 mom = calculate_moments(E,P,R,Z0,Tf)
 
-prior = rep(list(list(name = "exponential", params=c(2))),nrow(E))
+prior = rep(list(list(name = "normal", params=c(0,.25), bounds = c(0,1))),nrow(E))
 ranges = matrix(rep(c(0,1),nrow(E)),nrow(E),2,byrow = T)
 
 out = create_stan_data(E = E, P= P, final_pop = pop_vec, init_pop = init_pop, times = X$dtimes, priors = prior)

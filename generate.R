@@ -3,7 +3,7 @@ library(stringr)
 
 #functional_deps is an array of strings encoding functions of  variable 'x1, x2, ...' and constant parameters 'c1','c2',...
 #priors is list of with prior objects for all parameters in order of the rate they contribute to
-#example prior object: p = list(name="gamma",params=c(1,1), init = c(0,3))
+#example prior object: p = list(name="gamma",params=c(1,1), init = c(0,3), bounds=c(0,3))
 #filename is name of generated Stan file
 generate = function(functional_deps, priors, filename){
   
@@ -13,6 +13,7 @@ generate = function(functional_deps, priors, filename){
   
   dists = readLines("allowed_distributions.txt") #load distributions file
   nPri = length(priors)
+  declStrs = rep(0,nPri)
   priorStrs = rep(0, nPri)
   
   for(i in 1:nFunc){
@@ -39,9 +40,12 @@ generate = function(functional_deps, priors, filename){
     else{
       stop("Invalid prior name!")
     }
-    priorStrs[p] = sprintf("\tTheta[%d] ~ %s(%s);\n", p, priors[[p]]$name, paste(priors[[p]]$params, collapse=","))
+    priorStrs[p] = sprintf("\tTheta%d ~ %s(%s);\n", p, priors[[p]]$name, paste(priors[[p]]$params, collapse=","))
+    if(!is.na(priors[[p]]$bounds)){
+      declStrs[p] = sprintf("\treal<lower=%d, upper=%d> Theta%d;\n", priors[[p]]$bounds[1], priors[[p]]$bounds[2], p)
+    }
   }
-  write(sprintf(template, paste(funcs, collapse=""),  paste(priorStrs,collapse="")), filename)
+  write(sprintf(template, paste(declStrs, collapse=""), paste(funcs, collapse=""),  paste(priorStrs,collapse="")), filename)
 }
 
 # takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
@@ -73,9 +77,9 @@ exp_to_stan = function(exprn, maxParams){
     if(num > maxParams){
       stop(paste("There is no prior for parameter",s,sep=" "))
     }
-    return(sprintf("Theta[%d]", num))
+    return(sprintf("Theta%d", num))
   }
-  if(!is.na(str_extract(deparse(first),"^x[1-9]$"))){ # variables
+  if(!is.null(str_extract(deparse(first),"^x[1-9]$"))){ # variables
     s = str_extract(deparse(first),"^x[1-9]+$")
     num = strtoi(substr(s,2,nchar(s)))
     return(sprintf("function_var[i, %d]", num))
