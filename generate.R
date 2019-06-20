@@ -5,10 +5,10 @@ library(stringr)
 #priors is list of with prior objects for all parameters in order of the rate they contribute to
 #example prior object: p = list(name="gamma",params=c(1,1), init = c(0,3), bounds=c(0,3))
 #filename is name of generated Stan file
-generate = function(functional_deps, priors, filename){
+generate = function(model, priors, filename){
   
   template =  readChar("stan_template.txt", file.info("stan_template.txt")$size) #load the template file
-  nFunc = length(functional_deps)
+  nFunc = length(model$func_deps)
   funcs = rep(0,nFunc)
   
   dists = readLines("allowed_distributions.txt") #load distributions file
@@ -18,8 +18,8 @@ generate = function(functional_deps, priors, filename){
   
   for(i in 1:nFunc){
     # convert the expression
-    exprn = functional_deps[[i]]
-    stanstr = exp_to_stan(exprn, nPri)
+    exprn = model$func_deps[[i]]
+    stanstr = exp_to_stan(exprn, model$nParams, mod$nDep)
     funcs[i] = sprintf("\t\tR[%d, P[%d]] = %s;\n",i,i,stanstr) 
   }
 
@@ -49,7 +49,7 @@ generate = function(functional_deps, priors, filename){
 }
 
 # takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
-exp_to_stan = function(exprn, maxParams){
+exp_to_stan = function(exprn, maxParams, maxDep){
   if(is.atomic(exprn) || is.name(exprn)){
     first = exprn
   }
@@ -62,27 +62,33 @@ exp_to_stan = function(exprn, maxParams){
   }
   if(deparse(first) %in% c('+','-','/','*','^','exp', 'log')){ #allowed operations
     if(length(exprn) > 2){
-      return(paste("(",exp_to_stan(exprn[[2]], maxParams),")", deparse(first), "(", exp_to_stan(exprn[[3]], maxParams), ")", sep=" "))
+      return(paste("(",exp_to_stan(exprn[[2]], maxParams, maxDep),")", deparse(first), "(", exp_to_stan(exprn[[3]], maxParams, maxDep), ")", sep=" "))
     }
     else{
-      return(paste(deparse(first),'(', exp_to_stan(exprn[[2]], maxParams), ')', sep=""))
+      return(paste(deparse(first),'(', exp_to_stan(exprn[[2]], maxParams, maxDep), ')', sep=""))
     }
   }
   if(deparse(first) == '('){
-    return(exp_to_stan(exprn[[2]], maxParams))
+    return(exp_to_stan(exprn[[2]], maxParams, maxDep))
   }
-  if(!is.na(str_extract(deparse(first),"^c\\[[1-9]\\]$"))){ # function parameters
-    s = str_extract(deparse(first),"^c\\[[1-9]\\]+$")
-    num = strtoi(substr(s,3,nchar(s)-1))
-    if(num > maxParams){
-      stop(paste("There is no prior for parameter",s,sep=" "))
+  if(deparse(first) == '['){
+    if(!is.na(str_extract(deparse(exprn),"^c\\[[1-9]+\\]$"))){ # function parameters
+      s = str_extract(deparse(exprn),"^c\\[[1-9]+\\]$")
+      num = strtoi(substr(s,3,nchar(s)-1))
+      if(num > maxParams){
+        stop(paste("Parameter",s,"goes beyond the number of paramters specified.",sep=" "))
+      }
+      return(sprintf("Theta%d", num))
     }
-    return(sprintf("Theta%d", num))
-  }
-  if(!is.null(str_extract(deparse(first),"^x\\[[1-9]\\]$"))){ # variables
-    s = str_extract(deparse(first),"^x\\[[1-9]\\]+$")
-    num = strtoi(substr(s,3,nchar(s)-1))
-    return(sprintf("function_var[i, %d]", num))
+    if(!is.na(str_extract(deparse(exprn),"^x\\[[1-9]+\\]$"))){ # variables
+      s = str_extract(deparse(exprn),"^x\\[[1-9]+\\]$")
+      print(s)
+      num = strtoi(substr(s,3,nchar(s)-1))
+      if(num > maxDep){
+        stop(paste("Variable",s,"goes beyond the number of dependent variables specified.",sep=" "))
+      }
+      return(sprintf("function_var[i,%d]", num))
+    }
   }
   else{
     stop("Invalid expression!")
