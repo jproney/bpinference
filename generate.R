@@ -41,7 +41,7 @@ generate = function(model, priors, filename){
       stop("Invalid prior name!")
     }
     priorStrs[p] = sprintf("\tTheta%d ~ %s(%s);\n", p, priors[[p]]$name, paste(priors[[p]]$params, collapse=","))
-    if(!is.na(priors[[p]]$bounds)){
+    if(!any(is.na(priors[[p]]$bounds))){
       declStrs[p] = sprintf("\treal<lower=%d, upper=%d> Theta%d;\n", priors[[p]]$bounds[1], priors[[p]]$bounds[2], p)
     }
   }
@@ -82,7 +82,6 @@ exp_to_stan = function(exprn, maxParams, maxDep){
     }
     if(!is.na(str_extract(deparse(exprn),"^x\\[[1-9]+\\]$"))){ # variables
       s = str_extract(deparse(exprn),"^x\\[[1-9]+\\]$")
-      print(s)
       num = strtoi(substr(s,3,nchar(s)-1))
       if(num > maxDep){
         stop(paste("Variable",s,"goes beyond the number of dependent variables specified.",sep=" "))
@@ -132,7 +131,6 @@ check_valid = function(exprn, maxParams, maxDep){
     }
     if(!is.na(str_extract(deparse(exprn),"^x\\[[1-9]+\\]$"))){ # variables
       s = str_extract(deparse(exprn),"^x\\[[1-9]+\\]$")
-      print(s)
       num = strtoi(substr(s,3,nchar(s)-1))
       if(num > maxDep){
         stop(paste("Variable",s,"goes beyond the number of dependent variables specified.",sep=" "))
