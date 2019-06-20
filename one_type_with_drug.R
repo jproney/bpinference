@@ -4,7 +4,7 @@ P = c(1,1)
 Z0 = c(1000) # initial population vector
 Tf = 5 #final simulation timepoint
 
-f1 = function(x){.15 + .2*exp(-2*x)}
+f1 = function(x){.15 + .2*exp(-x)}
 f2 = function(x){.2}
 fs = c(f1,f2)
 
@@ -23,9 +23,9 @@ X <- X %>% filter(!is.na(cells_prev))
 pop_vec = X$cells
 init_pop = X$cells_prev
 
-f = c(quote(c1 + c2*exp(-c3*x1)), quote(c4))
-prior = list(list(name = "uniform", params=c(0,1)), list(name = "uniform", params=c(0,1)), list(name = "lognormal", params=c(0,1)), list(name = "uniform", params=c(0,1)))
-ranges = matrix(c(0,1,0,1,0,3,0,1),4,2,byrow = T)
+f = c(quote(c1 + c2*exp(-x1)), quote(c3))
+prior = rep(list(list(name = "normal", params=c(0,.25), bounds = c(0,1))),3)
+ranges = matrix(c(0,1,0,1,0,1),3,2,byrow = T)
 
 out = create_stan_data(E = E, P= P, final_pop = matrix(pop_vec,ncol=1), init_pop = matrix(init_pop, ncol=1), times = X$dtimes, priors = prior, C = matrix(X$drug_level, ncol=1), functions = f)
 init = uniform_initialize(ranges, 4)
