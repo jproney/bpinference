@@ -64,15 +64,15 @@ bpsims <- function(E, R, P, Z0, times, reps)
 # C = dependent variable matrix. Dimensions c x q where q is nuber of dependent variables
 # functions = vector of functions that calculate each model rate based on dependent vars. Dimensions m x 1
 # reps = vector of times to replicate each distinct condition. Dimensions c x 1
-bpsims_modeling = function(E,P,Z0, C, functions, times, reps){
+bpsims_modeling = function(model, theta, Z0, C, times, reps){
   Z <- data.frame()
   r = 1
   for(i in 1:nrow(C)){
-    R = rep(0,ncol(E))
-    for(j in 1:nrow(E)){
-      R[j] = functions[[j]](C[i,])
+    R = rep(0,ncol(model$E))
+    for(j in 1:nrow(model$E)){
+      R[j] = eval(model$func_deps[[i]], envir = list(c = theta, x = C[i,]))
     }
-    x <- replicate(reps[i], bp(E, R, P, Z0, times)) 
+    x <- replicate(reps[i], bp(model$E, R, model$P, Z0, times)) 
     for(k in 1:reps[i])
     {
       Z <- rbind(Z, data.frame(cbind(times, rep = r, variable_state = i, data.frame(x[,,i]), C[i,])))

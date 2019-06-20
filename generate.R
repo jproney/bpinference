@@ -71,20 +71,71 @@ exp_to_stan = function(exprn, maxParams){
   if(deparse(first) == '('){
     return(exp_to_stan(exprn[[2]], maxParams))
   }
-  if(!is.na(str_extract(deparse(first),"^c[1-9]$"))){ # function parameters
-    s = str_extract(deparse(first),"^c[1-9]+$")
-    num = strtoi(substr(s,2,nchar(s)))
+  if(!is.na(str_extract(deparse(first),"^c\\[[1-9]\\]$"))){ # function parameters
+    s = str_extract(deparse(first),"^c\\[[1-9]\\]+$")
+    num = strtoi(substr(s,3,nchar(s)-1))
     if(num > maxParams){
       stop(paste("There is no prior for parameter",s,sep=" "))
     }
     return(sprintf("Theta%d", num))
   }
-  if(!is.null(str_extract(deparse(first),"^x[1-9]$"))){ # variables
-    s = str_extract(deparse(first),"^x[1-9]+$")
-    num = strtoi(substr(s,2,nchar(s)))
+  if(!is.null(str_extract(deparse(first),"^x\\[[1-9]\\]$"))){ # variables
+    s = str_extract(deparse(first),"^x\\[[1-9]\\]+$")
+    num = strtoi(substr(s,3,nchar(s)-1))
     return(sprintf("function_var[i, %d]", num))
   }
   else{
     stop("Invalid expression!")
+  }
+}
+
+check_valid = function(exprn, maxParams, maxDep){
+  if(is.atomic(exprn) || is.name(exprn)){
+    first = exprn
+  }
+  else{
+    first = exprn[[1]]
+  }
+  
+  if(is.atomic(first)){
+    return()
+  }
+  if(deparse(first) %in% c('+','-','/','*','^','exp', 'log')){ #allowed operations
+    if(length(exprn) > 2){
+      check_valid(exprn[[2]], maxParams, maxDep)
+      check_valid(exprn[[3]], maxParams, maxDep)
+      return()
+    }
+    else{
+      check_valid(exprn[[2]], maxParams, maxDep)
+      return();
+    }
+  }
+  if(deparse(first) == '('){
+    check_valid(exprn[[2]], maxParams, maxDep)
+    return()
+  }
+  if(deparse(first) == '['){
+    if(!is.na(str_extract(deparse(exprn),"^c\\[[1-9]+\\]$"))){ # function parameters
+      s = str_extract(deparse(exprn),"^c\\[[1-9]+\\]$")
+      num = strtoi(substr(s,3,nchar(s)-1))
+      if(num > maxParams){
+        stop(paste("Parameter",s,"goes beyond the number of paramters specified.",sep=" "))
+      }
+      return()
+    }
+    if(!is.na(str_extract(deparse(exprn),"^x\\[[1-9]+\\]$"))){ # variables
+      s = str_extract(deparse(exprn),"^x\\[[1-9]+\\]$")
+      print(s)
+      num = strtoi(substr(s,3,nchar(s)-1))
+      if(num > maxDep){
+        stop(paste("Variable",s,"goes beyond the number of dependent variables specified.",sep=" "))
+      }
+    return()
+    }
+    stop(paste("Invalid expression:",deparse(exprn),sep=" "))
+  }
+  else{
+    stop(paste("Invalid expression:",deparse(exprn),sep=" "))
   }
 }
