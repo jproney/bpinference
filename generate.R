@@ -56,8 +56,13 @@ exp_to_stan = function(exprn, maxParams){
   if(is.atomic(first)){
     return(first)
   }
-  if(deparse(first) %in% c('+','-','/','*','^')){ #allowed operations
-    return(paste("(",exp_to_stan(exprn[[2]], maxParams),")", deparse(first), "(", exp_to_stan(exprn[[3]], maxParams), ")", sep=" "))
+  if(deparse(first) %in% c('+','-','/','*','^','exp', 'log')){ #allowed operations
+    if(length(exprn) > 2){
+      return(paste("(",exp_to_stan(exprn[[2]], maxParams),")", deparse(first), "(", exp_to_stan(exprn[[3]], maxParams), ")", sep=" "))
+    }
+    else{
+      return(paste(deparse(first),'(', exp_to_stan(exprn[[2]], maxParams), ')', sep=""))
+    }
   }
   if(deparse(first) == '('){
     return(exp_to_stan(exprn[[2]], maxParams))

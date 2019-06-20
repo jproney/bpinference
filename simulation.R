@@ -66,6 +66,7 @@ bpsims <- function(E, R, P, Z0, times, reps)
 # reps = vector of times to replicate each distinct condition. Dimensions c x 1
 bpsims_modeling = function(E,P,Z0, C, functions, times, reps){
   Z <- data.frame()
+  r = 1
   for(i in 1:nrow(C)){
     R = rep(0,ncol(E))
     for(j in 1:nrow(E)){
@@ -74,7 +75,8 @@ bpsims_modeling = function(E,P,Z0, C, functions, times, reps){
     x <- replicate(reps[i], bp(E, R, P, Z0, times)) 
     for(k in 1:reps[i])
     {
-      Z <- rbind(Z, data.frame(cbind(times, rep = k, variable_state = i, data.frame(x[,,i]), C[i,])))
+      Z <- rbind(Z, data.frame(cbind(times, rep = r, variable_state = i, data.frame(x[,,i]), C[i,])))
+      r <- r + 1
     }
   }
   

@@ -109,8 +109,7 @@ transformed parameters{
     
 %s
     //END AUTO-GENERATED CODE FOR FUNCTIONAL DEPENDENCIES
-    
-    theta[c] =  append_array(to_array_1d(E),to_array_1d(R));
+    theta[i] =  append_array(to_array_1d(E),to_array_1d(R));
   }
 }
 model{
@@ -128,7 +127,7 @@ model{
   //END AUTO-GENERATED CODE FOR PRIORS
   
   for(i in 1:c){
-    moments[c] = integrate_ode_rk45(moment_ode, init_state, 0, times, theta[i], rdata, idata);
+    moments[i] = integrate_ode_rk45(moment_ode, init_state, 0, times, theta[i], rdata, idata);
   }
   
   for(k in 1:n){
