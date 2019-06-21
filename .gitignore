@@ -6,4 +6,4 @@ MNIST-data
 .Rdata
 .Rhistory
 *.stan
-
+stanfiles/
