@@ -63,7 +63,6 @@ bpsims = function(model, theta, Z0, times, reps, C = NA){
     }
     x <- replicate(reps, bp(model$E, R, model$P, Z0, times)) 
     Z <- data.frame()
-    times = c(0,times)
     for(i in 1:reps)
     {
       if(ncol(E) == 1){
@@ -72,7 +71,7 @@ bpsims = function(model, theta, Z0, times, reps, C = NA){
       else{
         pop = matrix(rbind(Z0,x[,,i]),ncol=ncol(E))
       }
-      Z <- rbind(Z, data.frame(cbind(times, rep = i, data.frame(pop))))
+      Z <- rbind(Z, data.frame(cbind(times = c(0,times), rep = i, data.frame(pop))))
     }
     return(Z)
     
@@ -86,12 +85,18 @@ bpsims = function(model, theta, Z0, times, reps, C = NA){
     for(i in 1:nrow(C)){
       R = rep(0,ncol(model$E))
       for(j in 1:nrow(model$E)){
-        R[j] = eval(model$func_deps[[j]], envir = list(c = theta, x = C[j,]))
+        R[j] = eval(model$func_deps[[j]], envir = list(c = theta, x = C[i,]))
       }
       x <- replicate(reps[i], bp(model$E, R, model$P, Z0, times)) 
       for(k in 1:reps[i])
       {
-        Z <- rbind(Z, data.frame(cbind(rbind(0,times), rep = r, variable_state = i, rbind(Z0,data.frame(x[,,i])), C[i,])))
+        if(ncol(E) == 1){
+          pop = matrix(c(Z0,x[,,k]),ncol=1)
+        }
+        else{
+          pop = matrix(rbind(Z0,x[,,k]), ncol = ncol(E))
+        }
+        Z <- rbind(Z, data.frame(cbind(times = c(0,times), rep = r, variable_state = i, dep = C[i,], data.frame(pop))))
         r <- r + 1
       }
     }

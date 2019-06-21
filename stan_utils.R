@@ -53,17 +53,21 @@ uniform_initialize = function(ranges, nchains){
 stan_data_from_simulation = function(X, model){
   library(dplyr)
   d = ncol(model$E)
+  offset = model$nDep + (model$nDep > 0)
   for(i in 1:d){
     cellname = sprintf("t%d_cells", i)
-    names(X)[2 + i] = cellname
+    names(X)[2 + offset + i] = cellname
     prevname = paste(cellname,"prev",sep="_")
     X = X %>% mutate(prev = lag(X[,cellname]))
-    names(X)[2 + d + i] = prevname
+    names(X)[2 + offset + d + i] = prevname
   }
   X = X %>% mutate(dtimes = times-lag(times))
   X <- X %>% filter(times!=0)
-  init_pop = as.matrix(X[,(2+d+1):(2+2*d)])
-  final_pop = as.matrix(X[,(3):(2+d)])
+  init_pop = as.matrix(X[,(3+ offset + d):(2+ offset + 2*d)])
+  final_pop = as.matrix(X[,(3 + offset):(2+ offset + d)])
   times = X$dtimes
+  if(model$nDep > 0){
+    return(create_stan_data(model, final_pop, init_pop, times, matrix(X$dep, ncol = model$nDep)))
+  }
   return(create_stan_data(model, final_pop, init_pop, times))
 }
