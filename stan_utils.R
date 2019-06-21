@@ -53,3 +53,16 @@ create_stan_data = function(model, final_pop, init_pop, times, priors, C = NA){
 uniform_initialize = function(ranges, nchains){
   return(replicate(nchains, list(list(Theta = apply(ranges,1,function(s){runif(1,s[1],s[2])})))))
 }
+
+# Helper function for piping simulation output into inference engine
+stan_data_from_simulation = function(X, model){
+  d = ncol(model$E)
+  for(i in 1:d){
+    cellname = sprintf("t%d_cells", i)
+    names(X)[2 + i] = cellname
+    prevname = paste(cellname,"prev",sep="_")
+    X = X %>% mutate(prev = lag(X[,cellname]))
+    names(X)[2 + d + i] = prevname
+  }
+  return(X)
+}

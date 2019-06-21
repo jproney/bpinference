@@ -53,21 +53,42 @@ bp = function(E, R, P, Z0, times){#Z0 = inital population vector, times = vector
 # functions = vector of functions that calculate each model rate based on dependent vars. Dimensions m x 1
 # reps = vector of times to replicate each distinct condition. Dimensions c x 1
 bpsims = function(model, theta, Z0, times, reps, C = NA){
-  if((model$nParams > 0) && (is.na(C) || ncol(C) < model$nParams)){
+  if((model$nDep > 0) && (is.na(C) || ncol(C) < model$nDep)){
     stop("Not enough dependent variables were provided for the model!")
   }
-  Z <- data.frame()
-  r = 1
-  for(i in 1:nrow(C)){
+  if((model$nDep == 0) && is.na(C)){
     R = rep(0,ncol(model$E))
     for(j in 1:nrow(model$E)){
-      R[j] = eval(model$func_deps[[i]], envir = list(c = theta, x = C[i,]))
+      R[j] = eval(model$func_deps[[j]], envir = list(c = theta))
     }
-    x <- replicate(reps[i], bp(model$E, R, model$P, Z0, times)) 
-    for(k in 1:reps[i])
+    x <- replicate(reps, bp(model$E, R, model$P, Z0, times)) 
+    Z <- data.frame()
+    times = c(0,times)
+    for(i in 1:reps)
     {
-      Z <- rbind(Z, data.frame(cbind(times, rep = r, variable_state = i, data.frame(x[,,i]), C[i,])))
-      r <- r + 1
+      pop = matrix(rbind(Z0,x[,,i]),ncol=ncol(E))
+      Z <- rbind(Z, data.frame(cbind(times, rep = i, data.frame(pop))))
+    }
+    return(Z)
+    
+  }
+  else{
+    if(length(reps) != nrow(C)){
+      stop("reps should be a vector with a different number of replications for each dependent variable condition")
+    }
+    Z <- data.frame()
+    r = 1
+    for(i in 1:nrow(C)){
+      R = rep(0,ncol(model$E))
+      for(j in 1:nrow(model$E)){
+        R[j] = eval(model$func_deps[[j]], envir = list(c = theta, x = C[j,]))
+      }
+      x <- replicate(reps[i], bp(model$E, R, model$P, Z0, times)) 
+      for(k in 1:reps[i])
+      {
+        Z <- rbind(Z, data.frame(cbind(rbind(0,times), rep = r, variable_state = i, rbind(Z0,data.frame(x[,,i])), C[i,])))
+        r <- r + 1
+      }
     }
   }
   
