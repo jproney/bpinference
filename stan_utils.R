@@ -51,6 +51,7 @@ uniform_initialize = function(ranges, nchains){
 
 # Helper function for piping simulation output into inference engine
 stan_data_from_simulation = function(X, model){
+  library(dplyr)
   d = ncol(model$E)
   for(i in 1:d){
     cellname = sprintf("t%d_cells", i)
