@@ -67,7 +67,7 @@ stan_data_from_simulation = function(X, model){
   final_pop = as.matrix(X[,(3 + offset):(2+ offset + d)])
   times = X$dtimes
   if(model$nDep > 0){
-    return(create_stan_data(model, final_pop, init_pop, times, matrix(X$dep, ncol = model$nDep)))
+    return(create_stan_data(model, final_pop, init_pop, times, matrix(X[,4:(3+model$nDep)], ncol = model$nDep)))
   }
   return(create_stan_data(model, final_pop, init_pop, times))
 }
