@@ -10,7 +10,7 @@
 # Priors should be a z-dimensional list, and each list entry should have a prior for that parameter
 # if C or functions is left as NA, inference is performed directly on the rates as parameters
 
-create_stan_data = function(model, final_pop, init_pop, times, priors, C = NA){
+create_stan_data = function(model, final_pop, init_pop, times, C = NA){
   m = nrow(model$E) #number of events
   d = ncol(model$E) #number of types
   n = nrow(final_pop) #number of datapoints
@@ -18,9 +18,6 @@ create_stan_data = function(model, final_pop, init_pop, times, priors, C = NA){
   l = length(times_unique) #number of distinct durations
   times_idx = match(times,times_unique) #index of time duration for each datapoint
   z = model$nParams #total number of parameters
-  if(model$nParams != length(priors)){
-    stop("Incorrect number of priors for model!")
-  }
   
   if(model$nDep > 0 && (is.na(C) || ncol(C) < mod$nDep)){
     stop("C does not contain enough dependent variables for the model")
@@ -38,14 +35,12 @@ create_stan_data = function(model, final_pop, init_pop, times, priors, C = NA){
     var_idx = apply(C,1,function(r){which.min(abs(rowSums(sweep(C_unique,2,r))))})  #indices of unique dependent variable combinations
   }
 
-  library(rstan)
-  generate(model, priors, "multitype_birth_death.stan") #generate the stan file
+
   stan_dat = list(d = d, m = m, n = n, l=l, c = c, q=q, z=z, E = E, P = P, 
                    pop_vec = final_pop, init_pop = init_pop,
                    times = array(times_unique,1), times_idx =  times_idx, 
                    function_var = C_unique, var_idx = var_idx)
-  fit = stan_model(file = "multitype_birth_death.stan")
-  return(list(model = fit, data = stan_dat))
+  return(stan_dat)
 }
 
 # create Stan initialization list by selecting initial values uniformly at ranom.
@@ -64,5 +59,10 @@ stan_data_from_simulation = function(X, model){
     X = X %>% mutate(prev = lag(X[,cellname]))
     names(X)[2 + d + i] = prevname
   }
-  return(X)
+  X = X %>% mutate(dtimes = times-lag(times))
+  X <- X %>% filter(times!=0)
+  init_pop = as.matrix(X[,(2+d+1):(2+2*d)])
+  final_pop = as.matrix(X[,(3):(2+d)])
+  times = X$dtimes
+  return(create_stan_data(model, final_pop, init_pop, times))
 }

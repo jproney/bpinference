@@ -9,10 +9,18 @@ priors = rep(list(list(name="normal",params=c(0,.25), bounds=c(0,5))),6)
 
 mod = bp_model(E, P, func_deps, 6, 0)
 
-generate(mod, priors, "test.stan")
-
 simulation_params = c(0.20, 0.10, 0.05, 0.20, 0.25, 0.20)
 
-X = bpsims(mod, simulation_params, Z0, times, 5000)
+X = bpsims(mod, simulation_params, Z0, times, 50)
 
-X_new = stan_data_from_simulation(X, mod)
+dat = stan_data_from_simulation(X, mod)
+
+generate(mod, priors, "test.stan")
+
+options(mc.cores = parallel::detectCores())
+
+ranges = matrix(rep(c(0,1),nrow(E)),nrow(E),2,byrow = T)
+init = uniform_initialize(ranges, 4)
+
+stan_mod <- stan_model(file = "test.stan")
+fit.data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
