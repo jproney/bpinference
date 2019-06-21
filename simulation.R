@@ -66,7 +66,12 @@ bpsims = function(model, theta, Z0, times, reps, C = NA){
     times = c(0,times)
     for(i in 1:reps)
     {
-      pop = matrix(rbind(Z0,x[,,i]),ncol=ncol(E))
+      if(ncol(E) == 1){
+        pop = matrix(c(Z0,x[,,i]),ncol=1)
+      }
+      else{
+        pop = matrix(rbind(Z0,x[,,i]),ncol=ncol(E))
+      }
       Z <- rbind(Z, data.frame(cbind(times, rep = i, data.frame(pop))))
     }
     return(Z)
