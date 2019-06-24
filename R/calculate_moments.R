@@ -1,59 +1,59 @@
 
-#Computes the first and second moment of the population vector at time Tf for a 
-#branching process with parameters E, P, R and initial population 
+#Computes the first and second moment of the population vector at time tf for a_mat 
+#branching process with parameters e_mat, p_vec, r_vec and initial population 
 
 #' @export
-calculate_moments <- function(E,P,R,Z0,Tf){
+calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   
-  d <- length(Z0)
-  R_prime <- matrix(rep(0,nrow(E)*d), c(nrow(E),d))
-  R_prime[cbind(1:nrow(E), P)] = R
+  ntype <- length(z0_vec)
+  r_prime_mat <- matrix(rep(0,nrow(e_mat)*ntype), c_mat(nrow(e_mat),ntype))
+  r_prime_mat[cbind(1:nrow(e_mat), p_vec)] = r_vec
   
-  lamb <- colSums(R_prime)
-  b <- t(t(E)%*%R_prime)/lamb
+  lamb <- colSums(r_prime_mat)
+  b_mat <- t(t(e_mat)%*%r_prime_mat)/lamb
   
-  #Diff EQ: M(t) = exp(At)
-  A <-  lamb*(b - diag(d))
-  M <- expm::expm(A*Tf)
+  #Diff EQ: m_mat(t) = exp(At)
+  a_mat <-  lamb*(b_mat - diag(ntype))
+  m_mat <- expm::expm(a_mat*tf)
   
-  C <- array(rep(0,d**3), c(d, d, d)); #matrix of second derivatives of offspring PGF
+  c_mat <- array(rep(0,ntype**3), c_mat(ntype, ntype, ntype)); #matrix of second derivatives of offspring PGF
   
-  for(i in 1:d){
-    i_mat <- t(t(E*E[,i])%*%R_prime)/lamb
-    i_mat[,i] <- i_mat[,i] - b[,i]
-    C[,i,] <- t(i_mat)
-    C[i,,] <- t(i_mat)
+  for(i in 1:ntype){
+    i_mat <- t(t(e_mat*e_mat[,i])%*%r_prime_mat)/lamb
+    i_mat[,i] <- i_mat[,i] - b_mat[,i]
+    c_mat[,i,] <- t(i_mat)
+    c_mat[i,,] <- t(i_mat)
   }
   
   second_moment_de <- function(t, state, params){
-    mt <- expm::expm(A*t)
-    Beta <- matrix(rep(0,d**3), nrow = d, ncol = d*d); #Beta array for second moment ODE
-    for(i in 1:d){
+    mt_mat <- expm::expm(a_mat*t)
+    beta_mat <- matrix(rep(0,ntype**3), nrow = ntype, ncol = ntype*ntype); #beta_mat array for second moment ODE
+    for(i in 1:ntype){
       ai <- lamb[i]
-      Beta[i,] <- c(ai*t(mt)%*%C[,,i]%*%mt) #vectorized computation of Beta
+      beta_mat[i,] <- c_mat(ai*t(mt_mat)%*%c_mat[,,i]%*%mt_mat) #vectorized computation of beta_mat
     }
-    x <- matrix(state,c(d,d*d))
-    x_prime <- c(A%*%x + Beta)
+    x <- matrix(state,c_mat(ntype,ntype*ntype))
+    x_prime <- c_mat(a_mat%*%x + beta_mat)
     return(list(x_prime))
   }
   
-  init_state <- array(rep(0,d**3),c(d,d,d)) #inital values of second moments
-  for(i in 1:d){
+  init_state <- array(rep(0,ntype**3),c_mat(ntype,ntype,ntype)) #inital values of second moments
+  for(i in 1:ntype){
     init_state[i,i,i] <- 1;
   }
-  init_state <- c(init_state)
-  times <- seq(0,Tf)
+  init_state <- c_mat(init_state)
+  times <- seq(0,tf)
   
   out <- deSolve::ode(y = init_state, times, func = second_moment_de, parms = 0)
-  dt <- array(out[nrow(out),-1],c(d,d*d)) #second moment array
+  dt_mat <- array(out[nrow(out),-1],c_mat(ntype,ntype*ntype)) #second moment array
   
-  Mu <- t(M)%*%Z0 #final mean population matrix
-  Sigma <- matrix(Z0%*%dt,c(d,d*d)) #final population covariance matrix
+  mu_mat <- t(m_mat)%*%z0_vec #final mean population matrix
+  sigma_mat <- matrix(z0_vec%*%dt_mat,c_mat(ntype,ntype*ntype)) #final population covariance matrix
   
-  for(i in 1:d){
-    for(j in 1:d){
-      Sigma[i,j] <-  Sigma[i,j] - Z0%*%(M[,i]*M[,j])
+  for(i in 1:ntype){
+    for(j in 1:ntype){
+      sigma_mat[i,j] <-  sigma_mat[i,j] - z0_vec%*%(m_mat[,i]*m_mat[,j])
     }
   }
-  return(list("mu" = Mu, "sigma" = Sigma))
+  return(list("mu_mat" = mu_mat, "sigma_mat" = sigma_mat))
 }

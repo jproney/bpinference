@@ -1,60 +1,61 @@
 #' @import rstan
+#' @import dplyr
 # wrapper script to aid in branching process inference
 
 # model = the branching process model being estimated pop_vec =
-# population vectors at end of each run. Dimensions n x d init_pop =
-# population at beginning of each run.  DImensions n x d times = the
+# population vectors at end of each run. Dimensions ndatapts x ntypes init_pop =
+# population at beginning of each run.  DImensions ndatapts x ntypes times = the
 # length of time elapsing between each initial population and each
-# final population. dimensions n x 1 C = matrix of dependent variables
-# that vary from run to run. Dimensions n x q functions = vector of
+# final population. dimensions ndatapts x 1 c_mat = matrix of dependent variables
+# that vary from run to run. Dimensions ndatapts x ndep functions = vector of
 # function expressions specifying how each rate depends on the
-# dependent variables in the C matrix Priors = priors for all of the
+# dependent variables in the c_mat matrix Priors = priors for all of the
 # parameters. Should be in the form of a list of vectors Priors should
-# be a z-dimensional list, and each list entry should have a prior for
-# that parameter if C or functions is left as NA, inference is
+# be a nparams-dimensional list, and each list entry should have a prior for
+# that parameter if c_mat or functions is left as NA, inference is
 # performed directly on the rates as parameters
 
 #' @export
-create_stan_data <- function(model, final_pop, init_pop, times, C = NA)
+create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
 {
-  m <- nrow(model$E)  #number of events
-  d <- ncol(model$E)  #number of types
-  n <- nrow(final_pop)  #number of datapoints
+  nevents <- nrow(model$e_mat)  #number of events
+  ntypes <- ncol(model$e_mat)  #number of types
+  ndatapts <- nrow(final_pop)  #number of datapoints
   times_unique <- unique(times)  #distinct timepoints
-  l <- length(times_unique)  #number of distinct durations
+  ntimes_unique <- length(times_unique)  #number of distinct durations
   times_idx <- match(times, times_unique)  #index of time duration for each datapoint
-  z <- model$nParams  #total number of parameters
+  nparams <- model$nparams  #total number of parameters
   
-  if (model$nDep > 0 && (is.na(C) || ncol(C) < mod$nDep))
+  if (model$ndep > 0 && (is.na(c_mat) || ncol(c_mat) < mod$ndep))
   {
-    stop("C does not contain enough dependent variables for the model")
+    stop("c_mat does not contain enough dependent variables for the model")
   }
-  if (model$nDep == 0 && is.na(C))
+  if (model$ndep == 0 && is.na(c_mat))
   {
-    C_unique <- matrix(0, 1, 1)
-    c <- 1
-    q <- 1
-    var_idx <- rep(1, n)
+    c_mat_unique <- matrix(0, 1, 1)
+    ndep_levels <- 1
+    ndep <- 1
+    var_idx <- rep(1, ndatapts)
   } else
   {
-    C_unique <- matrix(C[!duplicated(C), ], ncol = ncol(C))  #unique combinations of dependent variables
-    c <- nrow(C_unique)  #number of distinct combinations of dependent variables
-    q <- ncol(C_unique)  #number of different dependent variables
-    var_idx <- apply(C, 1, function(r)
+    c_mat_unique <- matrix(c_mat[!duplicated(c_mat), ], ncol = ncol(c_mat))  #unique combinations of dependent variables
+    ndep_levels <- nrow(c_mat_unique)  #number of distinct combinations of dependent variables
+    ndep <- ncol(c_mat_unique)  #number of different dependent variables
+    var_idx <- apply(c_mat, 1, function(r)
     {
-      which.min(abs(rowSums(sweep(C_unique, 2, r))))
+      which.min(abs(rowSums(sweep(c_mat_unique, 2, r))))
     })  #indices of unique dependent variable combinations
   }
   
   
-  stan_dat <- list(d = d, m = m, n = n, l = l, c = c, q = q, z = z, E = E, 
-                   P = P, pop_vec = final_pop, init_pop = init_pop, times = array(times_unique, 
-                                                                                  1), times_idx = times_idx, function_var = C_unique, var_idx = var_idx)
+  stan_dat <- list(ntypes = ntypes, nevents = nevents, ndatapts = ndatapts, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, e_mat = model$e_mat, 
+                   p_vec = model$p_vec, pop_vec = final_pop, init_pop = init_pop, times = array(times_unique, 
+                                                                                  1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
   return(stan_dat)
 }
 
 # create Stan initialization list by selecting initial values uniformly
-# at ranom.  ranges is a z x 2 matrix, where z is the number of
+# at ranom.  ranges is a nparams x 2 matrix, where nparams is the number of
 # parameters. Each row has contains a lower and upper bound for
 # initialization.
 
@@ -70,27 +71,27 @@ uniform_initialize <- function(ranges, nchains)
 # Helper function for piping simulation output into inference engine
 
 #' @export
-stan_data_from_simulation <- function(X, model)
+stan_data_from_simulation <- function(sim_data, model)
 {
-  d <- ncol(model$E)
-  offset <- model$nDep + (model$nDep > 0)
-  for (i in 1:d)
+  ntypes <- ncol(model$e_mat)
+  offset <- model$ndep + (model$ndep > 0)
+  for (i in 1:ntypes)
   {
     cellname <- sprintf("t%d_cells", i)
-    names(X)[2 + offset + i] <- cellname
+    names(sim_data)[2 + offset + i] <- cellname
     prevname <- paste(cellname, "prev", sep = "_")
-    X <- X %>% dplyr::mutate(prev = lag(X[, cellname]))
-    names(X)[2 + offset + d + i] <- prevname
+    sim_data <- sim_data %>% dplyr::mutate(prev = lag(sim_data[, cellname]))
+    names(sim_data)[2 + offset + ntypes + i] <- prevname
   }
-  X <- X %>% dplyr::mutate(dtimes = times - lag(times))
-  X <- X %>% filter(times != 0)
-  init_pop <- as.matrix(X[, (3 + offset + d):(2 + offset + 2 * d)])
-  final_pop <- as.matrix(X[, (3 + offset):(2 + offset + d)])
-  times <- X$dtimes
-  if (model$nDep > 0)
+  sim_data <- sim_data %>% dplyr::mutate(dtimes = times - lag(times))
+  sim_data <- sim_data %>% filter(times != 0)
+  init_pop <- as.matrix(sim_data[, (3 + offset + ntypes):(2 + offset + 2 * ntypes)])
+  final_pop <- as.matrix(sim_data[, (3 + offset):(2 + offset + ntypes)])
+  times <- sim_data$dtimes
+  if (model$ndep > 0)
   {
-    return(create_stan_data(model, final_pop, init_pop, times, matrix(X[, 
-                                                                        4:(3 + model$nDep)], ncol = model$nDep)))
+    return(create_stan_data(model, final_pop, init_pop, times, matrix(sim_data[, 
+                                                                        4:(3 + model$ndep)], ncol = model$ndep)))
   }
   return(create_stan_data(model, final_pop, init_pop, times))
 }
@@ -99,40 +100,40 @@ stan_data_from_simulation <- function(X, model)
 # 'x1, x2, ...' and constant parameters 'c1','c2',... priors is list of
 # with prior objects for all parameters in order of the rate they
 # contribute to example prior object: p =
-# list(name='gamma',params=c(1,1), init = c(0,3), bounds=c(0,3))
+# list(name='gamma',params=ndep_levels(1,1), init = ndep_levels(0,3), bounds=ndep_levels(0,3))
 # filename is name of generated Stan file
 
 #' @export
 generate <- function(model, priors, filename)
 {
   
-  nFunc <- length(model$func_deps)
-  funcs <- rep(0, nFunc)
+  nfunc <- length(model$func_deps)
+  funcs <- rep(0, nfunc)
   
-  nPri <- length(priors)
-  declStrs <- rep(0, nPri)
-  priorStrs <- rep(0, nPri)
+  nprior <- length(priors)
+  declStrs <- rep(0, nprior)
+  priorStrs <- rep(0, nprior)
   
-  for (i in 1:nFunc)
+  for (i in 1:nfunc)
   {
     # convert the expression
     exprn <- model$func_deps[[i]]
-    stanstr <- exp_to_stan(exprn, model$nParams, mod$nDep)
-    funcs[i] <- sprintf("\t\tR[%d, P[%d]] = %s;\n", i, i, stanstr)
+    stanstr <- exp_to_stan(exprn, model$nparams, mod$ndep)
+    funcs[i] <- sprintf("\t\tr_mat[%d, p_vec[%d]] = %s;\n", i, i, stanstr)
   }
   
-  for (p in 1:nPri)
+  for (p in 1:nprior)
   {
-    ind <- which(!is.na(stringr::str_extract(allowed.distributions, paste("^", priors[[p]]$name, 
+    ind <- which(!is.na(stringr::str_extract(ALLOWED_DISTRIBUTIONS, paste("^", priors[[p]]$name, 
                                                  " ", sep = ""))))
     if (length(ind) > 0)
     {
-      nparm <- strtoi(stringr::str_extract(allowed.distributions[ind], "[1-9]+"))
+      nparm <- strtoi(stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[1-9]+"))
       if (nparm != length(priors[[p]]$params))
       {
         stop("Incorrect number of parameters for prior distribution")
       }
-      constraints <- stringr::str_extract(allowed.distributions[ind], "[_+]+")
+      constraints <- stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[_+]+")
       for (i in 1:nparm)
       {
         if (priors[[p]]$params[i] <= 0 && substr(constraints, i, 
@@ -153,13 +154,13 @@ generate <- function(model, priors, filename)
                              priors[[p]]$bounds[1], priors[[p]]$bounds[2], p)
     }
   }
-  write(sprintf(stan.template, paste(declStrs, collapse = ""), paste(funcs, 
+  write(sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
                                                                 collapse = ""), paste(priorStrs, collapse = "")), filename)
 }
 
 # takes simple mathematical R expressions and turns them into a
 # specific type of Stan code to fill in the template
-exp_to_stan <- function(exprn, maxParams, maxDep)
+exp_to_stan <- function(exprn, max_params, max_dep)
 {
   if (is.atomic(exprn) || is.name(exprn))
   {
@@ -178,18 +179,18 @@ exp_to_stan <- function(exprn, maxParams, maxDep)
     # allowed operations
     if (length(exprn) > 2)
     {
-      return(paste("(", exp_to_stan(exprn[[2]], maxParams, maxDep), 
-                   ")", deparse(first), "(", exp_to_stan(exprn[[3]], maxParams, 
-                                                         maxDep), ")", sep = " "))
+      return(paste("(", exp_to_stan(exprn[[2]], max_params, max_dep), 
+                   ")", deparse(first), "(", exp_to_stan(exprn[[3]], max_params, 
+                                                         max_dep), ")", sep = " "))
     } else
     {
-      return(paste(deparse(first), "(", exp_to_stan(exprn[[2]], maxParams, 
-                                                    maxDep), ")", sep = ""))
+      return(paste(deparse(first), "(", exp_to_stan(exprn[[2]], max_params, 
+                                                    max_dep), ")", sep = ""))
     }
   }
   if (deparse(first) == "(")
   {
-    return(exp_to_stan(exprn[[2]], maxParams, maxDep))
+    return(exp_to_stan(exprn[[2]], max_params, max_dep))
   }
   if (deparse(first) == "[")
   {
@@ -198,7 +199,7 @@ exp_to_stan <- function(exprn, maxParams, maxDep)
       # function parameters
       s <- stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > maxParams)
+      if (num > max_params)
       {
         stop(paste("Parameter", s, "goes beyond the number of paramters specified.", 
                    sep = " "))
@@ -210,7 +211,7 @@ exp_to_stan <- function(exprn, maxParams, maxDep)
       # variables
       s <- stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > maxDep)
+      if (num > max_dep)
       {
         stop(paste("Variable", s, "goes beyond the number of dependent variables specified.", 
                    sep = " "))
@@ -223,7 +224,7 @@ exp_to_stan <- function(exprn, maxParams, maxDep)
   }
 }
 
-check_valid <- function(exprn, maxParams, maxDep)
+check_valid <- function(exprn, max_params, max_dep)
 {
   if (is.atomic(exprn) || is.name(exprn))
   {
@@ -242,18 +243,18 @@ check_valid <- function(exprn, maxParams, maxDep)
     # allowed operations
     if (length(exprn) > 2)
     {
-      check_valid(exprn[[2]], maxParams, maxDep)
-      check_valid(exprn[[3]], maxParams, maxDep)
+      check_valid(exprn[[2]], max_params, max_dep)
+      check_valid(exprn[[3]], max_params, max_dep)
       return()
     } else
     {
-      check_valid(exprn[[2]], maxParams, maxDep)
+      check_valid(exprn[[2]], max_params, max_dep)
       return()
     }
   }
   if (deparse(first) == "(")
   {
-    check_valid(exprn[[2]], maxParams, maxDep)
+    check_valid(exprn[[2]], max_params, max_dep)
     return()
   }
   if (deparse(first) == "[")
@@ -263,7 +264,7 @@ check_valid <- function(exprn, maxParams, maxDep)
       # function parameters
       s <- stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > maxParams)
+      if (num > max_params)
       {
         stop(paste("Parameter", s, "goes beyond the number of paramters specified.", 
                    sep = " "))
@@ -275,7 +276,7 @@ check_valid <- function(exprn, maxParams, maxDep)
       # variables
       s <- stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > maxDep)
+      if (num > max_dep)
       {
         stop(paste("Variable", s, "goes beyond the number of dependent variables specified.", 
                    sep = " "))
