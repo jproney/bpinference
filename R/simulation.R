@@ -1,8 +1,12 @@
-# Simulate multi-type Markov branching process e_mat = event matrix. e_mat[i]
-# has number of each offspring produced in birth event i r_vec = rate
-# vector. Dimensions: N x 1. r_vec[i] has rate of bith event i. p_vec = parent
-# vector. Dimensions: N x 1. p_vec[i] has parent type of birth event i.
-
+#' Simulate multi-type Markov branching process
+#'
+#' @param e_mat The matrix of birth events that can occur in the brnaching process. Dimensions \code{nevents} x \code{ntypes}
+#' @param p_vec A vector containing the parent type for each of the birth events in \code{e_mat}. Dimensions \code{nevents} x 1
+#' @param r_vec A vector containing the rate at which each of the birth events in \code{e_mat} occurs. Dimensions \code{nevents} x 1
+#' @param z0_vec The initial population vector at time 0. Dimensions \code{ntypes} x 1
+#' @param times The timepoints at which to record the population
+#' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
+#'
 #' @export
 bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
 {

@@ -1,7 +1,12 @@
 
-#Computes the first and second moment of the population vector at time tf for a_mat 
-#branching process with parameters e_mat, p_vec, r_vec and initial population 
-
+#' Computes the first and second moments of the the joint population-size distribution of a Markov branching proccess
+#'
+#' @param e_mat The matrix of birth events that can occur in the brnaching process. Dimensions \code{nevents} x \code{ntypes}
+#' @param p_vec A vector containing the parent type for each of the birth events in \code{e_mat}. Dimensions \code{nevents} x 1
+#' @param r_vec A vector containing the rate at which each of the birth events in \code{e_mat} occurs. Dimensions \code{nevents} x 1
+#' @param z0_vec The initial population vector at time 0. Dimensions \code{ntypes} x 1
+#' @return A list of two elements: \code{mu_mat} contains the mean number of each type at time \code{tf}, \code{sigma_mat} is the covariance matrix.
+#' 
 #' @export
 calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   
