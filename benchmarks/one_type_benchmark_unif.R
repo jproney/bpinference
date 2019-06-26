@@ -19,18 +19,18 @@ simulation_dat = bpsims(mod, simulation_params, z0, times, nsims)
 
 dat = stan_data_from_simulation(simulation_dat, mod)
 
-generate(mod, priors, "/michorlab/jroney/stanfiles/one_type_benchmark.stan")
+generate(mod, priors, "/michorlab/jroney/stanfiles/one_type_benchmark_unif.stan")
 
 options(mc.cores = parallel::detectCores())
 
 ranges = matrix(rep(c(0,1),nrow(e_mat)),nrow(e_mat),2,byrow = T)
 init = uniform_initialize(ranges, 4)
 
-if(file.exists("/michorlab/jroney/compiles/one_type_benchmark.RDS")){
-  stan_mod <- readRDS("/michorlab/jroney/compiles/one_type_benchmark.RDS")
+if(file.exists("/michorlab/jroney/compiles/one_type_benchmark_unif.RDS")){
+  stan_mod <- readRDS("/michorlab/jroney/compiles/one_type_benchmark_unif.RDS")
 } else{
-  stan_mod <- stan_model(file = "/michorlab/jroney/stanfiles/one_type_benchmark.stan")
-  saveRDS(stan_mod, "/michorlab/jroney/compiles/one_type_benchmark.RDS")
+  stan_mod <- stan_model(file = "/michorlab/jroney/stanfiles/one_type_benchmark_unif.stan")
+  saveRDS(stan_mod, "/michorlab/jroney/compiles/one_type_benchmark_unif.RDS")
 }
 
 fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
@@ -39,4 +39,4 @@ poster = data.frame(nsims = nsims, Theta1_mean = mean(s$Theta1),Theta2_mean = me
                     Theta1_95lci = quantile(s$Theta1, .025)[[1]], Theta2_95lci = quantile(s$Theta2, .025)[[1]], 
                     Theta1_95uci = quantile(s$Theta1, .975)[[1]], Theta2_95uci = quantile(s$Theta2, .975)[[1]])
 
-write.table(poster, "/michorlab/jroney/saves/one_type_benchmark.csv", sep = ",", col.names = !file.exists("/michorlab/jroney/saves/one_type_benchmark.csv"), row.names = FALSE, append = T)
+write.table(poster, "/michorlab/jroney/saves/one_type_benchmark_unif.csv", sep = ",", col.names = !file.exists("/michorlab/jroney/saves/one_type_benchmark_unif.csv"), row.names = FALSE, append = T)
