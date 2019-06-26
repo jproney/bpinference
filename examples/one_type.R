@@ -5,7 +5,7 @@ tf = 5 #final simulation timepoint
 times = seq(1,tf)
 
 func_deps = c('c[1]','c[2]')
-priors = rep(list(list(name="normal",params=c(0, .25), bounds=c(0,5))),2)
+priors = rep(list(list(name="uniform",params=c(0, 2), bounds=c(0,2))),2)
 
 mod = bp_model(e_mat, p_vec, func_deps, 2, 0)
 
