@@ -5,5 +5,5 @@
 #SBATCH --mem 2000
 
 module load R/3.5.1
-Rscript "/michorlab/jroney/bpinference/benchmarks/one_type_benchmark.R" "${args}"
+Rscript "/michorlab/jroney/bpinference/benchmarks/one_type_benchmark.R" "${nsims}"
 
