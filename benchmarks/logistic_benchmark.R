@@ -40,12 +40,14 @@ if(file.exists("/michorlab/jroney/compiles/logistic_benchmark.RDS")){
 
 fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
 s = extract(fit_data)
+ndiv = check_div(fit_data)
 poster = data.frame(nsims = nsims, 
                     Theta1_mean = mean(s$Theta1), Theta1_med = median(s$Theta1),  Theta1_95lci = quantile(s$Theta1, .025)[[1]], Theta1_95uci = quantile(s$Theta1, .975)[[1]], Theta1_50lci = quantile(s$Theta1, .25)[[1]], Theta1_50uci = quantile(s$Theta1, .75)[[1]],
                     Theta2_mean = mean(s$Theta2), Theta2_med = median(s$Theta2),  Theta2_95lci = quantile(s$Theta2, .025)[[1]], Theta2_95uci = quantile(s$Theta2, .975)[[1]], Theta2_50lci = quantile(s$Theta2, .25)[[1]], Theta2_50uci = quantile(s$Theta2, .75)[[1]],
                     Theta3_mean = mean(s$Theta3), Theta3_med = median(s$Theta3),  Theta3_95lci = quantile(s$Theta3, .025)[[1]], Theta3_95uci = quantile(s$Theta3, .975)[[1]], Theta3_50lci = quantile(s$Theta3, .25)[[1]], Theta3_50uci = quantile(s$Theta3, .75)[[1]],
                     Theta4_mean = mean(s$Theta4), Theta4_med = median(s$Theta4),  Theta4_95lci = quantile(s$Theta4, .025)[[1]], Theta4_95uci = quantile(s$Theta4, .975)[[1]], Theta4_50lci = quantile(s$Theta4, .25)[[1]], Theta4_50uci = quantile(s$Theta4, .75)[[1]],
-                    Theta5_mean = mean(s$Theta5), Theta5_med = median(s$Theta5),  Theta5_95lci = quantile(s$Theta5, .025)[[1]], Theta5_95uci = quantile(s$Theta5, .975)[[1]], Theta5_50lci = quantile(s$Theta5, .25)[[1]], Theta5_50uci = quantile(s$Theta5, .75)[[1]],)
+                    Theta5_mean = mean(s$Theta5), Theta5_med = median(s$Theta5),  Theta5_95lci = quantile(s$Theta5, .025)[[1]], Theta5_95uci = quantile(s$Theta5, .975)[[1]], Theta5_50lci = quantile(s$Theta5, .25)[[1]], Theta5_50uci = quantile(s$Theta5, .75)[[1]],
+                    Divergences = ndiv)
 
 
 write.table(poster, "/michorlab/jroney/saves/logistic_benchmark.csv", sep = ",", col.names = !file.exists("/michorlab/jroney/saves/logistic_benchmark.csv"), row.names = FALSE, append = T)
