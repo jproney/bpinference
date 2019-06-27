@@ -19,7 +19,7 @@ simulation_params = c(0.15, .2, 10, 0.5, 0.10)
 
 c_mat = matrix(c(0.0,0.2,0.4,0.6,0.8,1.0), ncol=1)
 
-simulation_data = bpsims(mod, simulation_params, z0, times, rep(20,6), c_mat)
+simulation_data = bpsims(mod, simulation_params, z0, times, rep(nsims,6), c_mat)
 
 dat = stan_data_from_simulation(simulation_data, mod)
 
