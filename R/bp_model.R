@@ -1,5 +1,14 @@
-# model class that can be used for inference and simulation
+#' model class that can be used for inference and simulation
 
+#' constructor for object of class \code{bp_model}
+#' 
+#' @param e_mat The matrix of birth events that can occur in the brnaching process. Dimensions \code{nevents} x \code{ntypes}
+#' @param p_vec A vector containing the parent type for each of the birth events in \code{e_mat}. Dimensions \code{nevents} x 1
+#' @param func_deps A vector of expressions encoding how each rate depends on the parameters of the model and a set of dependent variables.
+#' @param nparam The number of parameters in the model
+#' @param ndep The number of dependent variables which influence the rates of the model
+#' 
+#' @return A new branching process model object
 new_bp_model <- function(e_mat, p_vec, func_deps, nparam, ndep)
 {
   
@@ -7,6 +16,11 @@ new_bp_model <- function(e_mat, p_vec, func_deps, nparam, ndep)
                         ndep = ndep), class = "bp_model"))
 }
 
+#' function to determine whether an object is a valid instance of class \code{bpmodel}
+#' 
+#' @param bpm  The branching process model object
+#' 
+#' @return The model passed into the function if it is vaild. Throws an exception otherwise
 validate_bp_model <- function(bpm)
 {
   data <- unclass(bpm)
@@ -44,6 +58,15 @@ validate_bp_model <- function(bpm)
   return(bpm)
 }
 
+#' User-friendly function to construct a new valid \code{bpm} object
+#' 
+#' @param e_mat The matrix of birth events that can occur in the brnaching process. Dimensions \code{nevents} x \code{ntypes}
+#' @param p_vec A vector containing the parent type for each of the birth events in \code{e_mat}. Dimensions \code{nevents} x 1
+#' @param func_deps A vector of expressions encoding how each rate depends on the parameters of the model and a set of dependent variables.
+#' @param nparam The number of parameters in the model
+#' @param ndep The number of dependent variables which influence the rates of the model
+#' 
+#' @return A new branching process model object if the parameters passed are valid. Otherwise an exception is thrown.
 #' @export
 bp_model <- function(e_mat, p_vec, func_deps, nparam, ndep)
 {

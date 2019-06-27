@@ -57,15 +57,18 @@ bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
   return(zt_mat)
 }
 
-# simulating multiple branching processes where process rates vary as a
-# function of dependent variables c_mat = dependent variable matrix.
-# Dimensions c x q where q is nuber of dependent variables functions =
-# vector of functions that calculate each model rate based on dependent
-# vars. Dimensions m x 1 reps = vector of times to replicate each
-# distinct condition. Dimensions c x 1
-
+#' Simulate multi-type Markov branching process where process rates vary as a function of dependent variables
+#'
+#' @param model An object of type \code{bpmodel} representing the model to be simulated
+#' @param theta A vector of dependent variables to calculate the rates of each birth venet in \code{model}. Dimensions \code{ndep_levels} x \code{ndep}
+#' @param z0_vec The initial population vector at time 0. Dimensions \code{ntypes} x 1
+#' @param times The timepoints at which to record the population
+#' @param reps a vector containing the number of times to replicate each dependent variables condidion. Dimensions \code{ndep_levels} x 1
+#' 
+#' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
+#'
 #' @export
-bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
+=bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
 {
   if ((model$ndep > 0) && (is.na(c_mat) || ncol(c_mat) < model$ndep))
   {
