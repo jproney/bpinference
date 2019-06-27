@@ -68,7 +68,7 @@ bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
 #' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
 #'
 #' @export
-=bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
+bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
 {
   if ((model$ndep > 0) && (is.na(c_mat) || ncol(c_mat) < model$ndep))
   {

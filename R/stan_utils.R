@@ -1,20 +1,15 @@
 #' @import rstan
 #' @import dplyr
-# wrapper script to aid in branching process inference
 
-# model = the branching process model being estimated pop_vec =
-# population vectors at end of each run. Dimensions ndatapts x ntypes init_pop =
-# population at beginning of each run.  DImensions ndatapts x ntypes times = the
-# length of time elapsing between each initial population and each
-# final population. dimensions ndatapts x 1 c_mat = matrix of dependent variables
-# that vary from run to run. Dimensions ndatapts x ndep functions = vector of
-# function expressions specifying how each rate depends on the
-# dependent variables in the c_mat matrix Priors = priors for all of the
-# parameters. Should be in the form of a list of vectors Priors should
-# be a nparams-dimensional list, and each list entry should have a prior for
-# that parameter if c_mat or functions is left as NA, inference is
-# performed directly on the rates as parameters
-
+#' function to generate a stan input list from population data
+#' 
+#' @param model The branching process model being estimated
+#' @param final_pop Population vectors at end of each run. Dimensions ndatapts x ntypes 
+#' @param init_pop = population at beginning of each run.  Dimensions ndatapts x ntypes 
+#' @param times = the length of time elapsing between each initial population and each final population. dimensions ndatapts x 1 
+#' @param c_mat = matrix of dependent variables that vary from run to run. Dimensions ndatapts x ndep 
+#'
+#' @return A data list to pass to the Stan sampling function 
 #' @export
 create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
 {
@@ -54,11 +49,11 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
   return(stan_dat)
 }
 
-# create Stan initialization list by selecting initial values uniformly
-# at ranom.  ranges is a nparams x 2 matrix, where nparams is the number of
-# parameters. Each row has contains a lower and upper bound for
-# initialization.
-
+#' create Stan initialization list by selecting initial values uniformly at ranom.  
+#' @param range nparams x 2 matrix, where nparams is the number ofparameters. Each row has a lower and upper bound for initialization
+#' @param nchains number of Markov chains for which to sample initial values
+#' 
+#' @return a stan initialization list
 #' @export
 uniform_initialize <- function(ranges, nchains)
 {
@@ -68,8 +63,11 @@ uniform_initialize <- function(ranges, nchains)
   })))))
 }
 
-# Helper function for piping simulation output into inference engine
-
+#' Helper function for piping simulation output into inference engine
+#' @param sim_data simulation data as returned from \code{bpsims}
+#' @param model the \code{bpmodel} object the produced the data
+#' 
+#' @return A data list to pass to the Stan sampling function 
 #' @export
 stan_data_from_simulation <- function(sim_data, model)
 {
@@ -96,13 +94,11 @@ stan_data_from_simulation <- function(sim_data, model)
   return(create_stan_data(model, final_pop, init_pop, times))
 }
 
-# functional_deps is an array of strings encoding functions of variable
-# 'x1, x2, ...' and constant parameters 'c1','c2',... priors is list of
-# with prior objects for all parameters in order of the rate they
-# contribute to example prior object: p =
-# list(name='gamma',params=ndep_levels(1,1), init = ndep_levels(0,3), bounds=ndep_levels(0,3))
-# filename is name of generated Stan file
-
+#' Generate a Stan file for inferring the model parameters
+#' @param model The \code{bpmodel} object from which to generate the Stan file
+#' @param priors A list of prior distributions for each parameters in the mode. 
+#' Each entry in the list should be a names list of the form list(name="normal",params=c(0,1),bounds=(-100,100))
+#' @param filename The name of the file in which to store the model. Should end in ".stan"
 #' @export
 generate <- function(model, priors, filename)
 {
@@ -158,8 +154,12 @@ generate <- function(model, priors, filename)
                                                                 collapse = ""), paste(priorStrs, collapse = "")), filename)
 }
 
-# takes simple mathematical R expressions and turns them into a
-# specific type of Stan code to fill in the template
+#' takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
+#' @param exprn the expression to parse
+#' @param max_params the number of parameters in the model, which determines the maximum parameter index that can be referenced in the expression
+#' @param max_dep the number of dependent variables in the model, which determines the amximum dependent variables index that can be referenced in the model
+#' 
+#' @return A string with the Stan code derived from the R expressions
 exp_to_stan <- function(exprn, max_params, max_dep)
 {
   if (is.atomic(exprn) || is.name(exprn))
@@ -224,6 +224,12 @@ exp_to_stan <- function(exprn, max_params, max_dep)
   }
 }
 
+#' takes simple mathematical R expressions and determines whether they can be parsed into stan code
+#' @param exprn the expression to parse
+#' @param max_params the number of parameters in the model, which determines the maximum parameter index that can be referenced in the expression
+#' @param max_dep the number of dependent variables in the model, which determines the amximum dependent variables index that can be referenced in the model
+#' 
+#' @return Nothing if the expression is valid. Otherwise an exception is thrown.
 check_valid <- function(exprn, max_params, max_dep)
 {
   if (is.atomic(exprn) || is.name(exprn))
