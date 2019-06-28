@@ -9,12 +9,12 @@ z0 = c(0,0,1000) # initial population vector
 tf = 5 #final simulation timepoint
 times = seq(1,tf)
 
-func_deps = c('c[1]','c[2]','c[3]', 'c[4]', 'c[5]', 'c[6]')
-priors = rep(list(list(name="uniform",params=c(0,2), bounds=c(0,2))),6)
+func_deps = c('c[1]','c[2]','c[3]', 'c[4]', 'c[5]', 'c[6]', 'c[7]', 'c[8]')
+priors = rep(list(list(name="uniform",params=c(0,2), bounds=c(0,2))),8)
 
 mod = bp_model(e_mat, p_vec, func_deps, 8, 0)
 
-simulation_params = c(.2, .25, .25, .1, .1, .15 ,.2,.15)
+simulation_params = c(.2, .25, .2, .1, .1, .15 ,.2,.15)
 
 simulation_dat = bpsims(mod, simulation_params, z0, times, nsims)
 
