@@ -170,7 +170,7 @@ exp_to_stan <- function(exprn, max_params, max_dep)
     first <- exprn[[1]]
   }
   
-  if (is.atomic(first))
+  if (is.atomic(first) && is.numeric(first) && !is.array(first))
   {
     return(first)
   }
@@ -194,33 +194,35 @@ exp_to_stan <- function(exprn, max_params, max_dep)
   }
   if (deparse(first) == "[")
   {
-    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")))
     {
       # function parameters
-      s <- stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_params)
+      if (num > max_params || num <= 0)
       {
-        stop(paste("Parameter", s, "goes beyond the number of paramters specified.", 
+        stop(paste("Parameter", s, "goes beyond the number of parameters specified.", 
                    sep = " "))
       }
       return(sprintf("Theta%d", num))
     }
-    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")))
     {
       # variables
-      s <- stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_dep)
+      if (num > max_dep || num <= 0)
       {
         stop(paste("Variable", s, "goes beyond the number of dependent variables specified.", 
                    sep = " "))
       }
       return(sprintf("function_var[i,%d]", num))
     }
-  } else
+    stop(paste("Invalid expression:", deparse(exprn), sep = " "))
+  } 
+  else
   {
-    stop("Invalid expression!")
+    stop(paste("Invalid expression:", deparse(exprn), sep = " "))
   }
 }
 
@@ -240,7 +242,7 @@ check_valid <- function(exprn, max_params, max_dep)
     first <- exprn[[1]]
   }
   
-  if (is.atomic(first))
+  if (is.atomic(first) && is.numeric(first) && !is.array(first))
   {
     return()
   }
@@ -265,24 +267,24 @@ check_valid <- function(exprn, max_params, max_dep)
   }
   if (deparse(first) == "[")
   {
-    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")))
     {
       # function parameters
-      s <- stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_params)
+      if (num > max_params || num <= 0)
       {
-        stop(paste("Parameter", s, "goes beyond the number of paramters specified.", 
+        stop(paste("Parameter", s, "goes beyond the number of parameters specified.", 
                    sep = " "))
       }
       return()
     }
-    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")))
     {
       # variables
-      s <- stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_dep)
+      if (num > max_dep || num <= 0)
       {
         stop(paste("Variable", s, "goes beyond the number of dependent variables specified.", 
                    sep = " "))
