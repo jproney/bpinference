@@ -14,7 +14,7 @@ priors = rep(list(list(name="uniform",params=c(0,2), bounds=c(0,2))),8)
 
 mod = bp_model(e_mat, p_vec, func_deps, 8, 0)
 
-simulation_params = c(.2, .25, .2, .1, .1, .15 ,.2,.15)
+simulation_params = c(.2, .2, .3, .1, .05, .15 ,.15,.2)
 
 simulation_dat = bpsims(mod, simulation_params, z0, times, nsims)
 
@@ -44,9 +44,9 @@ poster = data.frame(nsims = nsims,
                     Theta3_mean = mean(s$Theta3), Theta3_med = median(s$Theta3),  Theta3_95lci = quantile(s$Theta3, .025)[[1]], Theta3_95uci = quantile(s$Theta3, .975)[[1]], Theta3_50lci = quantile(s$Theta3, .25)[[1]], Theta3_50uci = quantile(s$Theta3, .75)[[1]],
                     Theta4_mean = mean(s$Theta4), Theta4_med = median(s$Theta4),  Theta4_95lci = quantile(s$Theta4, .025)[[1]], Theta4_95uci = quantile(s$Theta4, .975)[[1]], Theta4_50lci = quantile(s$Theta4, .25)[[1]], Theta4_50uci = quantile(s$Theta4, .75)[[1]],
                     Theta5_mean = mean(s$Theta5), Theta5_med = median(s$Theta5),  Theta5_95lci = quantile(s$Theta5, .025)[[1]], Theta5_95uci = quantile(s$Theta5, .975)[[1]], Theta5_50lci = quantile(s$Theta5, .25)[[1]], Theta5_50uci = quantile(s$Theta5, .75)[[1]],
-                    Theta6_mean = mean(s$Theta4), Theta4_med = median(s$Theta4),  Theta4_95lci = quantile(s$Theta4, .025)[[1]], Theta4_95uci = quantile(s$Theta4, .975)[[1]], Theta4_50lci = quantile(s$Theta4, .25)[[1]], Theta4_50uci = quantile(s$Theta4, .75)[[1]],
-                    Theta7_mean = mean(s$Theta5), Theta5_med = median(s$Theta5),  Theta5_95lci = quantile(s$Theta5, .025)[[1]], Theta5_95uci = quantile(s$Theta5, .975)[[1]], Theta5_50lci = quantile(s$Theta5, .25)[[1]], Theta5_50uci = quantile(s$Theta5, .75)[[1]],
-                    Theta8_mean = mean(s$Theta4), Theta4_med = median(s$Theta4),  Theta4_95lci = quantile(s$Theta4, .025)[[1]], Theta4_95uci = quantile(s$Theta4, .975)[[1]], Theta4_50lci = quantile(s$Theta4, .25)[[1]], Theta4_50uci = quantile(s$Theta4, .75)[[1]],
+                    Theta6_mean = mean(s$Theta6), Theta6_med = median(s$Theta6),  Theta6_95lci = quantile(s$Theta6, .025)[[1]], Theta6_95uci = quantile(s$Theta6, .975)[[1]], Theta6_50lci = quantile(s$Theta6, .25)[[1]], Theta6_50uci = quantile(s$Theta6, .75)[[1]],
+                    Theta7_mean = mean(s$Theta7), Theta7_med = median(s$Theta7),  Theta7_95lci = quantile(s$Theta7, .025)[[1]], Theta7_95uci = quantile(s$Theta7, .975)[[1]], Theta7_50lci = quantile(s$Theta7, .25)[[1]], Theta7_50uci = quantile(s$Theta7, .75)[[1]],
+                    Theta8_mean = mean(s$Theta8), Theta8_med = median(s$Theta8),  Theta8_95lci = quantile(s$Theta8, .025)[[1]], Theta8_95uci = quantile(s$Theta8, .975)[[1]], Theta8_50lci = quantile(s$Theta8, .25)[[1]], Theta8_50uci = quantile(s$Theta8, .75)[[1]],
                     Divergences = ndiv)
 
 write.table(poster, "/michorlab/jroney/saves/three_type_benchmark.csv", sep = ",", col.names = !file.exists("/michorlab/jroney/saves/three_type_benchmark.csv"), row.names = FALSE, append = T)
