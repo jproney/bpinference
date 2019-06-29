@@ -37,6 +37,7 @@ options(mc.cores = parallel::detectCores())
 
 fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init =init)
 s = extract(fit_data)
+ndiv = check_div(fit_data)
 poster = data.frame(nsims = nsims, 
                     Theta1_mean = mean(s$Theta1), Theta1_med = median(s$Theta1),  Theta1_95lci = quantile(s$Theta1, .025)[[1]], Theta1_95uci = quantile(s$Theta1, .975)[[1]], Theta1_50lci = quantile(s$Theta1, .25)[[1]], Theta1_50uci = quantile(s$Theta1, .75)[[1]],
                     Theta2_mean = mean(s$Theta2), Theta2_med = median(s$Theta2),  Theta2_95lci = quantile(s$Theta2, .025)[[1]], Theta2_95uci = quantile(s$Theta2, .975)[[1]], Theta2_50lci = quantile(s$Theta2, .25)[[1]], Theta2_50uci = quantile(s$Theta2, .75)[[1]],
