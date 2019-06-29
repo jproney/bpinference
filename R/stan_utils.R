@@ -174,7 +174,7 @@ exp_to_stan <- function(exprn, max_params, max_dep)
   {
     return(first)
   }
-  if (deparse(first) %in% c("+", "-", "/", "*", "^", "exp", "log"))
+  if (deparse(first) %in% c("+", "-", "/", "*", "^"))
   {
     # allowed operations
     if (length(exprn) > 2)
@@ -187,6 +187,18 @@ exp_to_stan <- function(exprn, max_params, max_dep)
       return(paste(deparse(first), "(", exp_to_stan(exprn[[2]], max_params, 
                                                     max_dep), ")", sep = ""))
     }
+  }
+  if(deparse(first) %in% c("exp", "log"))
+  {
+    if (length(exprn) > 2)
+    {
+      stop("log and exp take only one parameter")  
+    } else
+    {
+      return(paste(deparse(first), "(", exp_to_stan(exprn[[2]], max_params, 
+                                                    max_dep), ")", sep = ""))
+    }
+      
   }
   if (deparse(first) == "(")
   {
@@ -246,7 +258,7 @@ check_valid <- function(exprn, max_params, max_dep)
   {
     return()
   }
-  if (deparse(first) %in% c("+", "-", "/", "*", "^", "exp", "log"))
+  if (deparse(first) %in% c("+", "-", "/", "*", "^"))
   {
     # allowed operations
     if (length(exprn) > 2)
@@ -258,6 +270,16 @@ check_valid <- function(exprn, max_params, max_dep)
     {
       check_valid(exprn[[2]], max_params, max_dep)
       return()
+    }
+  }
+  if(deparse(first) %in% c("exp", "log"))
+  {
+    if (length(exprn) > 2)
+    {
+      stop("log and exp take only one parameter")  
+    } else
+    {
+      check_valid(exprn[[2]], max_params, max_dep)
     }
   }
   if (deparse(first) == "(")
