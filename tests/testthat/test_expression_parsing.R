@@ -53,3 +53,11 @@ test_that("Valid expressions are correctly translated to Stan by exp_to_stan",{
   expect_equal(exp_to_stan(quote(log(x[4])*(c[5]*(c[4]*x[1]))),5,5), "( log(function_var[i,4]) ) * ( ( Theta5 ) * ( ( Theta4 ) * ( function_var[i,1] ) ) )")
   expect_equal(exp_to_stan(quote(c[1]*exp(x[1]*x[2])), 5, 5), "( Theta1 ) * ( exp(( function_var[i,1] ) * ( function_var[i,2] )) )")
 })
+
+test_that("Valid expressions are not flagged by the validator", {
+  expect_silent(check_valid(quote(c[1]), 5, 5))
+  expect_silent(check_valid(quote(x[5]), 5, 5))
+  expect_silent(check_valid(quote(exp(c[3]) + log(x[2])), 5, 5))
+  expect_silent(check_valid(quote(log(x[4])*(c[5]*(c[4]*x[1]))),5,5))
+  expect_silent(check_valid(quote(c[1]*exp(x[1]*x[2])), 5, 5))
+})
