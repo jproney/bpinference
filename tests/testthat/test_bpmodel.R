@@ -42,6 +42,7 @@ test_that("Valid objects are properly instantiated",{
   p_mat = c(1, 1)
   func_deps = c('c[1] + c[2]/(1 + exp(c[3] * (x[1] - c[4])))','c[5] - c[6]/(1 + exp(c[7] * (x[1] - c[8])))') #logistic function
   expect_silent(bp_model(e_mat, p_mat, func_deps, 8, 1))
+  mod = bp_model(e_mat, p_mat, func_deps, 8, 1)
   expect_equal(mod$e_mat, e_mat)
   expect_equal(mod$p_vec, p_mat)
   expect_equal(deparse(mod$func_deps[[1]]), func_deps[1])

@@ -87,12 +87,12 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
     {
       if (ncol(model$e_mat) == 1)
       {
-        pop <- matrix(c(z0_vec, x[, , i]), ncol = 1)
+        pop <- matrix(c(x[, , i]), ncol = 1)
       } else
       {
-        pop <- matrix(rbind(z0_vec, x[, , i]), ncol = ncol(model$e_mat))
+        pop <- matrix(rbind(x[, , i]), ncol = ncol(model$e_mat))
       }
-      z <- rbind(z, data.frame(cbind(times = c(0, times), rep = i, 
+      z <- rbind(z, data.frame(cbind(times = times, rep = i, 
                                      data.frame(pop))))
     }
     return(z)
@@ -116,15 +116,11 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
       x <- replicate(reps[i], bp(model$e_mat, r_vec, model$p_vec, z0_vec, times))
       for (k in 1:reps[i])
       {
-        if (ncol(e_mat) == 1)
-        {
-          pop <- matrix(c(z0_vec, x[, , k]), ncol = 1)
-        } else
-        {
-          pop <- matrix(rbind(z0_vec, x[, , k]), ncol = ncol(e_mat))
-        }
-        z <- rbind(z, data.frame(cbind(times = c(0, times), rep = r_vec, 
-                                       variable_state = i, dep = c_mat[i, ], data.frame(pop))))
+
+        pop <- matrix(x[, , k], ncol = ncol(c_mat))
+        dep = matrix(rep(c_mat[i, ], length(times)), ncol = ncol(c_mat))
+        z <- rbind(z, data.frame(cbind(times = times, rep = r_vec, 
+                                       variable_state = i, data.frame(dep), data.frame(pop))))
         r_vec <- r_vec + 1
       }
     }
