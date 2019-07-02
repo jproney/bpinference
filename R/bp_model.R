@@ -51,7 +51,7 @@ validate_bp_model <- function(bpm)
   {
     stop("ndep should be an integer number of depedent variables")
   }
-  for (i in 1:length(func_deps))
+  for (i in 1:length(data$func_deps))
   {
     check_valid(data$func_deps[[i]], data$nparam, data$ndep)
   }

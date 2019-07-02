@@ -20,6 +20,7 @@ test_that("Inavlid expressions are detected and errors triggered in function exp
   expect_error(exp_to_stan(quote(c(1)), 6, 5), "Invalid expression: c\\(1\\)")
   expect_error(exp_to_stan(quote(exp(c[1],c[3])), 6, 5), "log and exp take only one parameter")
   expect_error(exp_to_stan(quote(exp(c[1],c[3], c[2])), 6, 5), "log and exp take only one parameter")
+  expect_error(exp_to_stan(quote(sin(x[1])), 6, 5), "Invalid expression: sin\\(x\\[1\\]\\)")
 })
 
 test_that("Inavlid expressions are detected and errors triggered in function check_valid",{
@@ -42,6 +43,7 @@ test_that("Inavlid expressions are detected and errors triggered in function che
   expect_error(check_valid(quote(c(1)), 6, 5), "Invalid expression: c\\(1\\)")
   expect_error(check_valid(quote(exp(c[1],c[3])), 6, 5), "log and exp take only one parameter")
   expect_error(check_valid(quote(exp(c[1],c[3], c[2])), 6, 5), "log and exp take only one parameter")
+  expect_error(check_valid(quote(sin(x[1])), 6, 5), "Invalid expression: sin\\(x\\[1\\]\\)")
 })
 
 test_that("Valid expressions are correctly translated to Stan by exp_to_stan",{
@@ -49,5 +51,5 @@ test_that("Valid expressions are correctly translated to Stan by exp_to_stan",{
   expect_equal(exp_to_stan(quote(x[5]), 5, 5), "function_var[i,5]")
   expect_equal(exp_to_stan(quote(exp(c[3]) + log(x[2])), 5, 5), "( exp(Theta3) ) + ( log(function_var[i,2]) )")
   expect_equal(exp_to_stan(quote(log(x[4])*(c[5]*(c[4]*x[1]))),5,5), "( log(function_var[i,4]) ) * ( ( Theta5 ) * ( ( Theta4 ) * ( function_var[i,1] ) ) )")
-  
+  expect_equal(exp_to_stan(quote(c[1]*exp(x[1]*x[2])), 5, 5), "( Theta1 ) * ( exp(( function_var[i,1] ) * ( function_var[i,2] )) )")
 })

@@ -280,6 +280,7 @@ check_valid <- function(exprn, max_params, max_dep)
     } else
     {
       check_valid(exprn[[2]], max_params, max_dep)
+      return()
     }
   }
   if (deparse(first) == "(")
