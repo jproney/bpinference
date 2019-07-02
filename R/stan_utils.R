@@ -78,11 +78,11 @@ stan_data_from_simulation <- function(sim_data, model)
     cellname <- sprintf("t%d_cells", i)
     names(sim_data)[2 + offset + i] <- cellname
     prevname <- paste(cellname, "prev", sep = "_")
-    sim_data <- sim_data %>% dplyr::mutate(prev = lag(sim_data[, cellname]))
+    sim_data <- sim_data %>% dplyr::mutate(prev = dplyr::lag(sim_data[, cellname]))
     names(sim_data)[2 + offset + ntypes + i] <- prevname
   }
-  sim_data <- sim_data %>% dplyr::mutate(dtimes = times - lag(times))
-  sim_data <- sim_data %>% filter(times != 0)
+  sim_data <- sim_data %>% dplyr::mutate(dtimes = times - dplyr::lag(times))
+  sim_data <- sim_data %>% dplyr::filter(times != 0)
   init_pop <- as.matrix(sim_data[, (3 + offset + ntypes):(2 + offset + 2 * ntypes)])
   final_pop <- as.matrix(sim_data[, (3 + offset):(2 + offset + ntypes)])
   times <- sim_data$dtimes
