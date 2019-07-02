@@ -70,3 +70,23 @@ test_that("Simulation runs without error and returns data of proper size -- case
   expect_equal(simulation_dat[nrow(simulation_dat),4], c_mat[nrow(c_mat),1])
   expect_equal(simulation_dat[nrow(simulation_dat),5], c_mat[nrow(c_mat),2])
 })
+
+test_that("Analytical moments and simulation results are in reasonable agreement", {
+  e_mat =  rbind(c(2, 0),c(1,1),c(1,1), c(0,2), c(0,0),c(0,0))
+  p_vec = c(1, 1, 2, 2, 1, 2)
+  z0 = c(100,50) # initial population vector
+  tf = 5 #final simulation timepoint
+  times = c(tf)
+  reps= 10000
+  
+  func_deps = c('c[1]','c[2]','c[3]', 'c[4]', 'c[5]', 'c[6]')
+  mod = bp_model(e_mat, p_vec, func_deps, 6, 0)
+  simulation_params = c(0.20, 0.10, 0.05, 0.20, 0.25, 0.20)
+  simulation_dat = bpsims(mod, simulation_params, z0, times, reps)
+  mom = calculate_moments(e_mat, p_vec, simulation_params, z0, tf)
+  expect_lt(abs(mean(simulation_dat[,3]) - mom$mu_mat[1]), 1)
+  expect_lt(abs(mean(simulation_dat[,4]) - mom$mu_mat[2]), 1)
+  expect_lt(abs(var(simulation_dat[,3]) - mom$sigma_mat[1,1]), 7)
+  expect_lt(abs(var(simulation_dat[,4]) - mom$sigma_mat[2,2]), 7)  
+  expect_lt(abs(cov(simulation_dat[,3], simulation_dat[,4]) - mom$sigma_mat[1,2]), 7)
+})

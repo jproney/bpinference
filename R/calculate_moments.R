@@ -11,7 +11,7 @@
 calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   
   ntype <- length(z0_vec)
-  r_prime_mat <- matrix(rep(0,nrow(e_mat)*ntype), c_mat(nrow(e_mat),ntype))
+  r_prime_mat <- matrix(rep(0,nrow(e_mat)*ntype), c(nrow(e_mat),ntype))
   r_prime_mat[cbind(1:nrow(e_mat), p_vec)] = r_vec
   
   lamb <- colSums(r_prime_mat)
@@ -21,7 +21,7 @@ calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   a_mat <-  lamb*(b_mat - diag(ntype))
   m_mat <- expm::expm(a_mat*tf)
   
-  c_mat <- array(rep(0,ntype**3), c_mat(ntype, ntype, ntype)); #matrix of second derivatives of offspring PGF
+  c_mat <- array(rep(0,ntype**3), c(ntype, ntype, ntype)); #matrix of second derivatives of offspring PGF
   
   for(i in 1:ntype){
     i_mat <- t(t(e_mat*e_mat[,i])%*%r_prime_mat)/lamb
@@ -35,25 +35,25 @@ calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
     beta_mat <- matrix(rep(0,ntype**3), nrow = ntype, ncol = ntype*ntype); #beta_mat array for second moment ODE
     for(i in 1:ntype){
       ai <- lamb[i]
-      beta_mat[i,] <- c_mat(ai*t(mt_mat)%*%c_mat[,,i]%*%mt_mat) #vectorized computation of beta_mat
+      beta_mat[i,] <- c(ai*t(mt_mat)%*%c_mat[,,i]%*%mt_mat) #vectorized computation of beta_mat
     }
-    x <- matrix(state,c_mat(ntype,ntype*ntype))
-    x_prime <- c_mat(a_mat%*%x + beta_mat)
+    x <- matrix(state,c(ntype,ntype*ntype))
+    x_prime <- c(a_mat%*%x + beta_mat)
     return(list(x_prime))
   }
   
-  init_state <- array(rep(0,ntype**3),c_mat(ntype,ntype,ntype)) #inital values of second moments
+  init_state <- array(rep(0,ntype**3),c(ntype,ntype,ntype)) #inital values of second moments
   for(i in 1:ntype){
     init_state[i,i,i] <- 1;
   }
-  init_state <- c_mat(init_state)
+  init_state <- c(init_state)
   times <- seq(0,tf)
   
   out <- deSolve::ode(y = init_state, times, func = second_moment_de, parms = 0)
-  dt_mat <- array(out[nrow(out),-1],c_mat(ntype,ntype*ntype)) #second moment array
+  dt_mat <- array(out[nrow(out),-1],c(ntype,ntype*ntype)) #second moment array
   
   mu_mat <- t(m_mat)%*%z0_vec #final mean population matrix
-  sigma_mat <- matrix(z0_vec%*%dt_mat,c_mat(ntype,ntype*ntype)) #final population covariance matrix
+  sigma_mat <- matrix(z0_vec%*%dt_mat,c(ntype,ntype*ntype)) #final population covariance matrix
   
   for(i in 1:ntype){
     for(j in 1:ntype){
