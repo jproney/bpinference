@@ -90,3 +90,19 @@ test_that("Analytical moments and simulation results are in reasonable agreement
   expect_lt(abs(var(simulation_dat[,4]) - mom$sigma_mat[2,2]), 7)  
   expect_lt(abs(cov(simulation_dat[,3], simulation_dat[,4]) - mom$sigma_mat[1,2]), 7)
 })
+
+test_that("Simulation data is converted to stan input without error",{
+  e_mat =  matrix(c(2,0),ncol=1)
+  p_vec = c(1, 1)
+  z0 = c(1000) # initial population vector
+  tf = 5 #final simulation timepoint
+  times = seq(0,tf)
+  reps = replicate(6,1+rpois(1,4))
+  
+  func_deps = c('c[1] + c[2]/(1 + exp(c[3]*(x[1] - c[4])))','c[5]') #logistic function
+  mod = bp_model(e_mat, p_vec, func_deps, 5, 1)
+  simulation_params = c(0.15, .2, 10, 0.5, 0.10)
+  c_mat = matrix(c(0.0,0.2,0.4,0.6,0.8,1.0), ncol=1)
+  simulation_dat = bpsims(mod, simulation_params, z0, times, reps, c_mat)
+  expect_silent(stan_data_from_simulation(simulation_dat, mod))
+})
