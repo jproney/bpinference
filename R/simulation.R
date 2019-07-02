@@ -104,7 +104,7 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
       stop("reps should be a vector with a different number of replications for each dependent variable condition")
     }
     z <- data.frame()
-    r_vec <- 1
+    curr_rep <- 1
     for (i in 1:nrow(c_mat))
     {
       r_vec <- rep(0, ncol(model$e_mat))
@@ -119,9 +119,9 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
 
         pop <- matrix(x[, , k], ncol = ncol(c_mat))
         dep = matrix(rep(c_mat[i, ], length(times)), ncol = ncol(c_mat))
-        z <- rbind(z, data.frame(cbind(times = times, rep = r_vec, 
+        z <- rbind(z, data.frame(cbind(times = times, rep = curr_rep, 
                                        variable_state = i, data.frame(dep), data.frame(pop))))
-        r_vec <- r_vec + 1
+        curr_rep <- curr_rep + 1
       }
     }
   }
