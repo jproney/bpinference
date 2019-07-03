@@ -24,7 +24,7 @@ options(mc.cores = parallel::detectCores())
 
 ranges = matrix(rep(c(0,1), length(simulation_params)),ncol=2,byrow = T)
 ranges[3,] = c(5,15)
-init = uniform_initialize(ranges, 1)
+init = uniform_initialize(ranges, 4)
 
 stan_mod <- stan_model(file = "clusters.stan")
-fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 1, refresh = 1, init =init)
+fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
