@@ -49,6 +49,56 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
   return(stan_dat)
 }
 
+#' function to generate a stan input list with sufficient statistics from population data. Only supports single-type
+#' 
+#' @param model The branching process model being estimated
+#' @param final_pop Population vectors at end of each run. Dimensions ndatapts x 1 
+#' @param init_pop = population at beginning of each run.  Dimensions ndatapts x 1 
+#' @param times = the length of time elapsing between each initial population and each final population. dimensions ndatapts x 1 
+#' @param c_mat = matrix of dependent variables that vary from run to run. Dimensions ndatapts x 1
+#'
+#' @return A data list to pass to the Stan sampling function 
+#' @export
+create_stan_data_cluster <- function(model, final_pop, init_pop, times, c_mat)
+{
+  nevents <- nrow(model$e_mat)  #number of events
+  ntypes <- ncol(model$e_mat)  #number of types
+  ndep <- ncol(c_mat)
+  nparams <- model$nparams  #total number of parameters
+  
+  combined <- cbind(times,c_mat)
+  clusters <- matrix(combined[!duplicated(combined), ], ncol = ncol(combined))  #unique combinations of dependent variables
+  nclusters <- nrow(clusters)
+  times_unique <- unique(times)  #distinct timepoints
+  ntimes_unique <- length(times_unique)  #number of distinct durations
+  c_mat_unique <- matrix(c_mat[!duplicated(c_mat), ], ncol = ncol(c_mat))  #unique combinations of dependent variables
+  ndep_levels <- nrow(c_mat_unique)  #number of distinct combinations of dependent variables
+  
+  cluster_idx <- apply(combined,1, function(r){which(apply(clusters,1,function(s){all(s == r)}))}) #this line is a monstrosity
+  times_idx <- match(clusters[,1], times_unique) # index of time duration for each datapoint
+  var_idx <- sapply(clusters[,2:(ndep+1)], function(r){which(apply(c_mat_unique,1,function(s){all(s == r)}))}) #this line is a monstrosity
+
+
+  final_pop <-final_pop/init_pop*100
+  init_pop <- matrix(rep(100,nclusters),ncol=1)
+  
+  df <- data.frame(cbind(pop = final_pop, cluster = cluster_idx));
+  
+  sigma_clust <- array(rep(0,nclusters),c(nclusters,1,1))
+  mu_clust <- matrix(rep(0, nclusters),ncol=1)
+  size_clust <-rep(0,nclusters)
+  
+  for(i in 1:nclusters){
+    sigma_clust[i] = var(df[df$cluster == i,1])
+    mu_clust[i] = mean(df[df$cluster == i,1])
+    size_clust[i] <- length(df[df$cluster == i,1])
+  }
+  
+  stan_dat <- list(ntypes = ntypes, nevents = nevents, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, nclusters = nclusters, cluster_sigma_hat = sigma_clust, cluster_mu_hat = mu_clust, cluster_size = size_clust, e_mat = model$e_mat, 
+                   p_vec = model$p_vec, init_pop = init_pop, times = array(times_unique, 1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
+  return(stan_dat)
+}
+
 #' create Stan initialization list by selecting initial values uniformly at ranom.  
 #' @param range nparams x 2 matrix, where nparams is the number ofparameters. Each row has a lower and upper bound for initialization
 #' @param nchains number of Markov chains for which to sample initial values
@@ -66,10 +116,11 @@ uniform_initialize <- function(ranges, nchains)
 #' Helper function for piping simulation output into inference engine
 #' @param sim_data simulation data as returned from \code{bpsims}
 #' @param model the \code{bpmodel} object the produced the data
+#' @param cluster whether to cluster the data to exploit sufficient statistics
 #' 
 #' @return A data list to pass to the Stan sampling function 
 #' @export
-stan_data_from_simulation <- function(sim_data, model)
+stan_data_from_simulation <- function(sim_data, model, cluster = F)
 {
   ntypes <- ncol(model$e_mat)
   offset <- model$ndep + (model$ndep > 0)
@@ -86,6 +137,9 @@ stan_data_from_simulation <- function(sim_data, model)
   init_pop <- as.matrix(sim_data[, (3 + offset + ntypes):(2 + offset + 2 * ntypes)])
   final_pop <- as.matrix(sim_data[, (3 + offset):(2 + offset + ntypes)])
   times <- sim_data$dtimes
+  if(cluster){
+    return(create_stan_data_cluster(model, final_pop, init_pop, times, matrix(sim_data[,4:(3 + model$ndep)], ncol = model$ndep)))
+  }
   if (model$ndep > 0)
   {
     return(create_stan_data(model, final_pop, init_pop, times, matrix(sim_data[, 
