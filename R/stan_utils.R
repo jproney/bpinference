@@ -59,8 +59,11 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
 #'
 #' @return A data list to pass to the Stan sampling function 
 #' @export
-create_stan_data_cluster <- function(model, final_pop, init_pop, times, c_mat)
+create_stan_data_cluster <- function(model, final_pop, init_pop, times, c_mat = NA)
 {
+  if(is.na(c_mat)){
+    c_mat = matrix(rep(1, length(times)), ncol=1)
+  }
   nevents <- nrow(model$e_mat)  #number of events
   ntypes <- ncol(model$e_mat)  #number of types
   ndep <- ncol(c_mat)
@@ -79,23 +82,22 @@ create_stan_data_cluster <- function(model, final_pop, init_pop, times, c_mat)
   var_idx <- sapply(clusters[,2:(ndep+1)], function(r){which(apply(c_mat_unique,1,function(s){all(s == r)}))}) #this line is a monstrosity
 
 
-  final_pop <-final_pop/init_pop*100
-  init_pop <- matrix(rep(100,nclusters),ncol=1)
-  
-  df <- data.frame(cbind(pop = final_pop, cluster = cluster_idx));
+  df <- data.frame(cbind(fp = data.frame(final_pop), ip = data.frame(init_pop), cluster = cluster_idx));
   
   sigma_clust <- array(rep(0,nclusters),c(nclusters,1,1))
   mu_clust <- matrix(rep(0, nclusters),ncol=1)
-  size_clust <-rep(0,nclusters)
+  size_clust <- rep(0,nclusters)
   
   for(i in 1:nclusters){
-    sigma_clust[i] = var(df[df$cluster == i,1])
-    mu_clust[i] = mean(df[df$cluster == i,1])
+    mu_clust[i] = mean(df[df$cluster == i,]$final_pop/df[df$cluster == i,]$init_pop)
     size_clust[i] <- length(df[df$cluster == i,1])
+    sigma_clust[i] = var(df[df$cluster == i,]$final_pop/sqrt(df[df$cluster == i,]$init_pop) - mu_clust[i]*sqrt(df[df$cluster == i,]$init_pop))
   }
   
-  stan_dat <- list(ntypes = ntypes, nevents = nevents, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, nclusters = nclusters, cluster_sigma_hat = sigma_clust, cluster_mu_hat = mu_clust, cluster_size = size_clust, e_mat = model$e_mat, 
-                   p_vec = model$p_vec, init_pop = init_pop, times = array(times_unique, 1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
+  init_pop <- matrix(rep(100, nclusters), ncol = ntypes)
+  
+  stan_dat <- list(ntypes = ntypes, nevents = nevents, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, nclusters = nclusters, cluster_sigma_hat = sigma_clust*100, cluster_mu_hat = mu_clust*100, cluster_size = as.array(size_clust), e_mat = model$e_mat, 
+                   p_vec = model$p_vec, init_pop = init_pop, times = as.array(times_unique), times_idx = as.array(times_idx), function_var = c_mat_unique, var_idx = as.array(var_idx))
   return(stan_dat)
 }
 
@@ -137,15 +139,22 @@ stan_data_from_simulation <- function(sim_data, model, cluster = F)
   init_pop <- as.matrix(sim_data[, (3 + offset + ntypes):(2 + offset + 2 * ntypes)])
   final_pop <- as.matrix(sim_data[, (3 + offset):(2 + offset + ntypes)])
   times <- sim_data$dtimes
-  if(cluster){
+  if (model$ndep > 0 && cluster)
+  {
     return(create_stan_data_cluster(model, final_pop, init_pop, times, matrix(sim_data[,4:(3 + model$ndep)], ncol = model$ndep)))
   }
-  if (model$ndep > 0)
+  else if (model$ndep > 0)
   {
-    return(create_stan_data(model, final_pop, init_pop, times, matrix(sim_data[, 
-                                                                        4:(3 + model$ndep)], ncol = model$ndep)))
+    return(create_stan_data(model, final_pop, init_pop, times, matrix(sim_data[,4:(3 + model$ndep)], ncol = model$ndep)))
   }
-  return(create_stan_data(model, final_pop, init_pop, times))
+  else if (cluster)
+  {
+    return(create_stan_data_cluster(model, final_pop, init_pop, times))
+  }
+  else
+  {
+    return(create_stan_data(model, final_pop, init_pop, times))
+  }
 }
 
 #' Generate a Stan file for inferring the model parameters
