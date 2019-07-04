@@ -21,6 +21,7 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
   times_idx <- match(times, times_unique)  #index of time duration for each datapoint
   nparams <- model$nparams  #total number of parameters
   
+  
   if (model$ndep > 0 && (is.na(c_mat) || ncol(c_mat) < mod$ndep))
   {
     stop("c_mat does not contain enough dependent variables for the model")
@@ -49,7 +50,7 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
   return(stan_dat)
 }
 
-#' function to generate a stan input list with sufficient statistics from population data. Only supports single-type
+#' function to generate a stan input list with sufficient statistics from population data. Now supports multi-type
 #' 
 #' @param model The branching process model being estimated
 #' @param final_pop Population vectors at end of each run. Dimensions ndatapts x 1 
@@ -77,27 +78,39 @@ create_stan_data_cluster <- function(model, final_pop, init_pop, times, c_mat = 
   c_mat_unique <- matrix(c_mat[!duplicated(c_mat), ], ncol = ncol(c_mat))  #unique combinations of dependent variables
   ndep_levels <- nrow(c_mat_unique)  #number of distinct combinations of dependent variables
   
+  init_pop <- matrix(init_pop, ncol = ntypes)
+  final_pop <- matrix(final_pop, ncol = ntypes)
+  
   cluster_idx <- apply(combined,1, function(r){which(apply(clusters,1,function(s){all(s == r)}))}) #this line is a monstrosity
   times_idx <- match(clusters[,1], times_unique) # index of time duration for each datapoint
   var_idx <- sapply(clusters[,2:(ndep+1)], function(r){which(apply(c_mat_unique,1,function(s){all(s == r)}))}) #this line is a monstrosity
 
 
-  df <- data.frame(cbind(fp = data.frame(final_pop), ip = data.frame(init_pop), cluster = cluster_idx));
-  
-  sigma_clust <- array(rep(0,nclusters),c(nclusters,1,1))
-  mu_clust <- matrix(rep(0, nclusters),ncol=1)
+  sigma_clust <- array(rep(0,nclusters),c(nclusters,ntypes,ntypes))
+  mu_clust <- matrix(rep(0, nclusters),ncol=ntypes)
   size_clust <- rep(0,nclusters)
+  new_init <- matrix(rep(0, nclusters*ntypes), ncol = ntypes)
   
   for(i in 1:nclusters){
-    mu_clust[i] = mean(df[df$cluster == i,]$final_pop/df[df$cluster == i,]$init_pop)
-    size_clust[i] <- length(df[df$cluster == i,1])
-    sigma_clust[i] = var(df[df$cluster == i,]$final_pop/sqrt(df[df$cluster == i,]$init_pop) - mu_clust[i]*sqrt(df[df$cluster == i,]$init_pop))
+    cluster_init = matrix(init_pop[cluster_idx == i,], ncol = ntypes)
+    cluster_final = matrix(final_pop[cluster_idx == i,], ncol = ntypes)
+  
+    z_bar <-  apply(cluster_init,2,mean)
+    
+    mom1 <- solve(t(cluster_init)%*%cluster_init)%*%t(cluster_init)%*%cluster_final
+    mu_clust[i,] <- z_bar%*%mom1 # asymptotically sufficient sample mean
+    
+    sample_var <- matrix((apply(cluster_init%*%mom1 - cluster_final, 1 , function(s){s%*%t(s)})), ncol = ntypes**2, byrow = T)
+    mom2 <- solve(t(cluster_init)%*%cluster_init)%*%t(cluster_init)%*%sample_var
+    sigma_clust[i,,] <- matrix(z_bar%*%mom2,ntypes,ntypes,byrow = T) # asymtotically sufficient sample variance 
+    
+    size_clust[i] <- sum(cluster_idx == i)
+    new_init[i,] <- z_bar
   }
   
-  init_pop <- matrix(rep(100, nclusters), ncol = ntypes)
   
-  stan_dat <- list(ntypes = ntypes, nevents = nevents, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, nclusters = nclusters, cluster_sigma_hat = sigma_clust*100, cluster_mu_hat = mu_clust*100, cluster_size = as.array(size_clust), e_mat = model$e_mat, 
-                   p_vec = model$p_vec, init_pop = init_pop, times = as.array(times_unique), times_idx = as.array(times_idx), function_var = c_mat_unique, var_idx = as.array(var_idx))
+  stan_dat <- list(ntypes = ntypes, nevents = nevents, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, nclusters = nclusters, cluster_sigma_hat = sigma_clust, cluster_mu_hat = mu_clust, cluster_size = as.array(size_clust), e_mat = model$e_mat, 
+                   p_vec = model$p_vec, init_pop = new_init, times = as.array(times_unique), times_idx = as.array(times_idx), function_var = c_mat_unique, var_idx = as.array(var_idx))
   return(stan_dat)
 }
 

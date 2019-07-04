@@ -1,0 +1,28 @@
+e_mat =  rbind(c(2, 0),c(1,1),c(1,1), c(0,2), c(0,0),c(0,0))
+p_vec = c(1, 1, 2, 2, 1, 2)
+z0 = c(1000,500) # initial population vector
+tf = 5 #final simulation timepoint
+times = seq(0,tf)
+
+func_deps = c('c[1]','c[2]','c[3]', 'c[4]', 'c[5]', 'c[6]')
+priors = rep(list(list(name="normal",params=c(0,.25), bounds=c(0,5))),6)
+
+mod = bp_model(e_mat, p_vec, func_deps, 6, 0)
+
+simulation_params = c(0.20, 0.10, 0.05, 0.20, 0.25, 0.20)
+
+simulation_dat = bpsims(mod, simulation_params, z0, times, 500)
+
+dat = stan_data_from_simulation(simulation_dat, mod, cluster = T)
+
+z_bar = apply(dat$init_pop,2,mean)
+
+mom = calculate_moments(e_mat, p_vec, simulation_params, z_bar, 1)
+
+options(mc.cores = parallel::detectCores())
+
+ranges = matrix(rep(c(0,1),nrow(e_mat)),nrow(e_mat),2,byrow = T)
+init = uniform_initialize(ranges, 4)
+
+stan_mod <- stan_model(file = "clusters_2type.stan")
+fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init =init)

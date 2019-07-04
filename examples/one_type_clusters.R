@@ -1,3 +1,4 @@
+library(rstan)
 e_mat =  matrix(c(2,0),ncol=1)
 p_vec = c(1, 1)
 z0 = c(1000) # initial population vector
