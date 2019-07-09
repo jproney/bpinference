@@ -14,7 +14,7 @@ priors = rep(list(list(name="uniform",params=c(0,2), bounds=c(0,2))),6)
 
 mod = bp_model(e_mat, p_vec, func_deps, 6, 0)
 
-simulation_params = c(0.20, 0.10, 0.05, 0.20, 0.25, 0.20)
+simulation_params = c(0.30, 0.10, 0.05, 0.15, 0.25, 0.20)
 
 simulation_dat = bpsims(mod, simulation_params, z0, times, nsims)
 
