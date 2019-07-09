@@ -60,5 +60,5 @@ calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
       sigma_mat[i,j] <-  sigma_mat[i,j] - z0_vec%*%(m_mat[,i]*m_mat[,j])
     }
   }
-  return(list("mu_mat" = mu_mat, "sigma_mat" = sigma_mat))
+  return(list("mu_mat" = mu_mat, "sigma_mat" = sigma_mat, "m_mat" = m_mat, "d_mat" = dt_mat))
 }

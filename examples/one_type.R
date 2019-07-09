@@ -13,7 +13,7 @@ simulation_params = c(0.25, 0.10)
 
 simulation_dat = bpsims(mod, simulation_params, z0, times, 50)
 
-dat = stan_data_from_simulation(simulation_dat, mod, cluster = T)
+dat = stan_data_from_simulation(simulation_dat, mod, cluster = F)
 
 generate(mod, priors, "test2.stan")
 
