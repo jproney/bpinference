@@ -21,7 +21,7 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
   times_idx <- match(times, times_unique)  #index of time duration for each datapoint
   nparams <- model$nparams  #total number of parameters
   
-  if (model$ndep > 0 && (is.na(c_mat) || ncol(c_mat) < mod$ndep))
+  if (model$ndep > 0 && (is.na(c_mat) || ncol(c_mat) < model$ndep))
   {
     stop("c_mat does not contain enough dependent variables for the model")
   }
