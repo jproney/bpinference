@@ -81,17 +81,11 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
     {
       r_vec[j] <- eval(model$func_deps[[j]], envir = list(c = theta))
     }
-    x <- replicate(reps, bp(model$e_mat, r_vec, model$p_vec, z0_vec, times))
+    x <- array(replicate(reps, bp(model$e_mat, r_vec, model$p_vec, z0_vec, times)),c(length(times),length(z0_vec), reps))
     z <- data.frame()
     for (i in 1:reps)
     {
-      if (ncol(model$e_mat) == 1)
-      {
-        pop <- matrix(c(x[, , i]), ncol = 1)
-      } else
-      {
-        pop <- matrix(rbind(x[, , i]), ncol = ncol(model$e_mat))
-      }
+      pop <- matrix(rbind(x[, , i]), ncol = ncol(model$e_mat))
       z <- rbind(z, data.frame(cbind(times = times, rep = i, 
                                      data.frame(pop))))
     }
