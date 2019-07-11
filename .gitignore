@@ -7,4 +7,3 @@ MNIST-data
 .Rhistory
 *.stan
 stanfiles/
-slurm*
