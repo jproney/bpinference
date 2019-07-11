@@ -1,17 +1,17 @@
 e_mat =  matrix(c(2,0),ncol=1)
 p_vec = c(1, 1)
-z0 = c(1000) # initial population vector
+z0 = c(100) # initial population vector
 tf = 5 #final simulation timepoint
-times = seq(1,tf)
+times = seq(0,1)
 
 func_deps = c('c[1]','c[2]')
-priors = rep(list(list(name="normal",params=c(0, .25), bounds=c(0,5))),2)
+priors = rep(list(list(name="uniform",params=c(0, 2), bounds=c(0,2))),2)
 
 mod = bp_model(e_mat, p_vec, func_deps, 2, 0)
 
 simulation_params = c(0.25, 0.10)
 
-simulation_dat = bpsims(mod, simulation_params, z0, times, 50)
+simulation_dat = bpsims(mod, simulation_params, z0, times, 5000)
 
 dat = stan_data_from_simulation(simulation_dat, mod)
 
