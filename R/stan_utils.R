@@ -1,20 +1,15 @@
 #' @import rstan
 #' @import dplyr
-# wrapper script to aid in branching process inference
 
-# model = the branching process model being estimated pop_vec =
-# population vectors at end of each run. Dimensions ndatapts x ntypes init_pop =
-# population at beginning of each run.  DImensions ndatapts x ntypes times = the
-# length of time elapsing between each initial population and each
-# final population. dimensions ndatapts x 1 c_mat = matrix of dependent variables
-# that vary from run to run. Dimensions ndatapts x ndep functions = vector of
-# function expressions specifying how each rate depends on the
-# dependent variables in the c_mat matrix Priors = priors for all of the
-# parameters. Should be in the form of a list of vectors Priors should
-# be a nparams-dimensional list, and each list entry should have a prior for
-# that parameter if c_mat or functions is left as NA, inference is
-# performed directly on the rates as parameters
-
+#' function to generate a stan input list from population data
+#' 
+#' @param model The branching process model being estimated
+#' @param final_pop Population vectors at end of each run. Dimensions ndatapts x ntypes 
+#' @param init_pop = population at beginning of each run.  Dimensions ndatapts x ntypes 
+#' @param times = the length of time elapsing between each initial population and each final population. dimensions ndatapts x 1 
+#' @param c_mat = matrix of dependent variables that vary from run to run. Dimensions ndatapts x ndep 
+#'
+#' @return A data list to pass to the Stan sampling function 
 #' @export
 create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
 {
@@ -54,11 +49,11 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
   return(stan_dat)
 }
 
-# create Stan initialization list by selecting initial values uniformly
-# at ranom.  ranges is a nparams x 2 matrix, where nparams is the number of
-# parameters. Each row has contains a lower and upper bound for
-# initialization.
-
+#' create Stan initialization list by selecting initial values uniformly at ranom.  
+#' @param range nparams x 2 matrix, where nparams is the number ofparameters. Each row has a lower and upper bound for initialization
+#' @param nchains number of Markov chains for which to sample initial values
+#' 
+#' @return a stan initialization list
 #' @export
 uniform_initialize <- function(ranges, nchains)
 {
@@ -68,8 +63,11 @@ uniform_initialize <- function(ranges, nchains)
   })))))
 }
 
-# Helper function for piping simulation output into inference engine
-
+#' Helper function for piping simulation output into inference engine
+#' @param sim_data simulation data as returned from \code{bpsims}
+#' @param model the \code{bpmodel} object the produced the data
+#' 
+#' @return A data list to pass to the Stan sampling function 
 #' @export
 stan_data_from_simulation <- function(sim_data, model)
 {
@@ -80,11 +78,11 @@ stan_data_from_simulation <- function(sim_data, model)
     cellname <- sprintf("t%d_cells", i)
     names(sim_data)[2 + offset + i] <- cellname
     prevname <- paste(cellname, "prev", sep = "_")
-    sim_data <- sim_data %>% dplyr::mutate(prev = lag(sim_data[, cellname]))
+    sim_data <- sim_data %>% dplyr::mutate(prev = dplyr::lag(sim_data[, cellname]))
     names(sim_data)[2 + offset + ntypes + i] <- prevname
   }
-  sim_data <- sim_data %>% dplyr::mutate(dtimes = times - lag(times))
-  sim_data <- sim_data %>% filter(times != 0)
+  sim_data <- sim_data %>% dplyr::mutate(dtimes = times - dplyr::lag(times))
+  sim_data <- sim_data %>% dplyr::filter(times != 0)
   init_pop <- as.matrix(sim_data[, (3 + offset + ntypes):(2 + offset + 2 * ntypes)])
   final_pop <- as.matrix(sim_data[, (3 + offset):(2 + offset + ntypes)])
   times <- sim_data$dtimes
@@ -96,13 +94,11 @@ stan_data_from_simulation <- function(sim_data, model)
   return(create_stan_data(model, final_pop, init_pop, times))
 }
 
-# functional_deps is an array of strings encoding functions of variable
-# 'x1, x2, ...' and constant parameters 'c1','c2',... priors is list of
-# with prior objects for all parameters in order of the rate they
-# contribute to example prior object: p =
-# list(name='gamma',params=ndep_levels(1,1), init = ndep_levels(0,3), bounds=ndep_levels(0,3))
-# filename is name of generated Stan file
-
+#' Generate a Stan file for inferring the model parameters
+#' @param model The \code{bpmodel} object from which to generate the Stan file
+#' @param priors A list of prior distributions for each parameters in the mode. 
+#' Each entry in the list should be a names list of the form list(name="normal",params=c(0,1),bounds=(-100,100))
+#' @param filename The name of the file in which to store the model. Should end in ".stan"
 #' @export
 generate <- function(model, priors, filename)
 {
@@ -158,8 +154,12 @@ generate <- function(model, priors, filename)
                                                                 collapse = ""), paste(priorStrs, collapse = "")), filename)
 }
 
-# takes simple mathematical R expressions and turns them into a
-# specific type of Stan code to fill in the template
+#' takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
+#' @param exprn the expression to parse
+#' @param max_params the number of parameters in the model, which determines the maximum parameter index that can be referenced in the expression
+#' @param max_dep the number of dependent variables in the model, which determines the amximum dependent variables index that can be referenced in the model
+#' 
+#' @return A string with the Stan code derived from the R expressions
 exp_to_stan <- function(exprn, max_params, max_dep)
 {
   if (is.atomic(exprn) || is.name(exprn))
@@ -170,11 +170,11 @@ exp_to_stan <- function(exprn, max_params, max_dep)
     first <- exprn[[1]]
   }
   
-  if (is.atomic(first))
+  if (is.atomic(first) && is.numeric(first) && !is.array(first))
   {
     return(first)
   }
-  if (deparse(first) %in% c("+", "-", "/", "*", "^", "exp", "log"))
+  if (deparse(first) %in% c("+", "-", "/", "*", "^"))
   {
     # allowed operations
     if (length(exprn) > 2)
@@ -188,42 +188,62 @@ exp_to_stan <- function(exprn, max_params, max_dep)
                                                     max_dep), ")", sep = ""))
     }
   }
+  if(deparse(first) %in% c("exp", "log"))
+  {
+    if (length(exprn) > 2)
+    {
+      stop("log and exp take only one parameter")  
+    } else
+    {
+      return(paste(deparse(first), "(", exp_to_stan(exprn[[2]], max_params, 
+                                                    max_dep), ")", sep = ""))
+    }
+      
+  }
   if (deparse(first) == "(")
   {
     return(exp_to_stan(exprn[[2]], max_params, max_dep))
   }
   if (deparse(first) == "[")
   {
-    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")))
     {
       # function parameters
-      s <- stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_params)
+      if (num > max_params || num <= 0)
       {
-        stop(paste("Parameter", s, "goes beyond the number of paramters specified.", 
+        stop(paste("Parameter", s, "goes beyond the number of parameters specified.", 
                    sep = " "))
       }
       return(sprintf("Theta%d", num))
     }
-    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")))
     {
       # variables
-      s <- stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_dep)
+      if (num > max_dep || num <= 0)
       {
         stop(paste("Variable", s, "goes beyond the number of dependent variables specified.", 
                    sep = " "))
       }
       return(sprintf("function_var[i,%d]", num))
     }
-  } else
+    stop(paste("Invalid expression:", deparse(exprn), sep = " "))
+  } 
+  else
   {
-    stop("Invalid expression!")
+    stop(paste("Invalid expression:", deparse(exprn), sep = " "))
   }
 }
 
+#' takes simple mathematical R expressions and determines whether they can be parsed into stan code
+#' @param exprn the expression to parse
+#' @param max_params the number of parameters in the model, which determines the maximum parameter index that can be referenced in the expression
+#' @param max_dep the number of dependent variables in the model, which determines the amximum dependent variables index that can be referenced in the model
+#' 
+#' @return Nothing if the expression is valid. Otherwise an exception is thrown.
 check_valid <- function(exprn, max_params, max_dep)
 {
   if (is.atomic(exprn) || is.name(exprn))
@@ -234,11 +254,11 @@ check_valid <- function(exprn, max_params, max_dep)
     first <- exprn[[1]]
   }
   
-  if (is.atomic(first))
+  if (is.atomic(first) && is.numeric(first) && !is.array(first))
   {
     return()
   }
-  if (deparse(first) %in% c("+", "-", "/", "*", "^", "exp", "log"))
+  if (deparse(first) %in% c("+", "-", "/", "*", "^"))
   {
     # allowed operations
     if (length(exprn) > 2)
@@ -252,6 +272,17 @@ check_valid <- function(exprn, max_params, max_dep)
       return()
     }
   }
+  if(deparse(first) %in% c("exp", "log"))
+  {
+    if (length(exprn) > 2)
+    {
+      stop("log and exp take only one parameter")  
+    } else
+    {
+      check_valid(exprn[[2]], max_params, max_dep)
+      return()
+    }
+  }
   if (deparse(first) == "(")
   {
     check_valid(exprn[[2]], max_params, max_dep)
@@ -259,24 +290,24 @@ check_valid <- function(exprn, max_params, max_dep)
   }
   if (deparse(first) == "[")
   {
-    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")))
     {
       # function parameters
-      s <- stringr::str_extract(deparse(exprn), "^c\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^c\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_params)
+      if (num > max_params || num <= 0)
       {
-        stop(paste("Parameter", s, "goes beyond the number of paramters specified.", 
+        stop(paste("Parameter", s, "goes beyond the number of parameters specified.", 
                    sep = " "))
       }
       return()
     }
-    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")))
+    if (!is.na(stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")))
     {
       # variables
-      s <- stringr::str_extract(deparse(exprn), "^x\\[[1-9]+\\]$")
+      s <- stringr::str_extract(deparse(exprn), "^x\\[[0-9]+\\]$")
       num <- strtoi(substr(s, 3, nchar(s) - 1))
-      if (num > max_dep)
+      if (num > max_dep || num <= 0)
       {
         stop(paste("Variable", s, "goes beyond the number of dependent variables specified.", 
                    sep = " "))

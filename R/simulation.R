@@ -1,8 +1,12 @@
-# Simulate multi-type Markov branching process e_mat = event matrix. e_mat[i]
-# has number of each offspring produced in birth event i r_vec = rate
-# vector. Dimensions: N x 1. r_vec[i] has rate of bith event i. p_vec = parent
-# vector. Dimensions: N x 1. p_vec[i] has parent type of birth event i.
-
+#' Simulate multi-type Markov branching process
+#'
+#' @param e_mat The matrix of birth events that can occur in the brnaching process. Dimensions \code{nevents} x \code{ntypes}
+#' @param p_vec A vector containing the parent type for each of the birth events in \code{e_mat}. Dimensions \code{nevents} x 1
+#' @param r_vec A vector containing the rate at which each of the birth events in \code{e_mat} occurs. Dimensions \code{nevents} x 1
+#' @param z0_vec The initial population vector at time 0. Dimensions \code{ntypes} x 1
+#' @param times The timepoints at which to record the population
+#' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
+#'
 #' @export
 bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
 {
@@ -53,13 +57,16 @@ bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
   return(zt_mat)
 }
 
-# simulating multiple branching processes where process rates vary as a
-# function of dependent variables c_mat = dependent variable matrix.
-# Dimensions c x q where q is nuber of dependent variables functions =
-# vector of functions that calculate each model rate based on dependent
-# vars. Dimensions m x 1 reps = vector of times to replicate each
-# distinct condition. Dimensions c x 1
-
+#' Simulate multi-type Markov branching process where process rates vary as a function of dependent variables
+#'
+#' @param model An object of type \code{bpmodel} representing the model to be simulated
+#' @param theta A vector of dependent variables to calculate the rates of each birth venet in \code{model}. Dimensions \code{ndep_levels} x \code{ndep}
+#' @param z0_vec The initial population vector at time 0. Dimensions \code{ntypes} x 1
+#' @param times The timepoints at which to record the population
+#' @param reps a vector containing the number of times to replicate each dependent variables condidion. Dimensions \code{ndep_levels} x 1
+#' 
+#' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
+#'
 #' @export
 bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
 {
@@ -80,12 +87,12 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
     {
       if (ncol(model$e_mat) == 1)
       {
-        pop <- matrix(c(z0_vec, x[, , i]), ncol = 1)
+        pop <- matrix(c(x[, , i]), ncol = 1)
       } else
       {
-        pop <- matrix(rbind(z0_vec, x[, , i]), ncol = ncol(model$e_mat))
+        pop <- matrix(rbind(x[, , i]), ncol = ncol(model$e_mat))
       }
-      z <- rbind(z, data.frame(cbind(times = c(0, times), rep = i, 
+      z <- rbind(z, data.frame(cbind(times = times, rep = i, 
                                      data.frame(pop))))
     }
     return(z)
@@ -97,7 +104,7 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
       stop("reps should be a vector with a different number of replications for each dependent variable condition")
     }
     z <- data.frame()
-    r_vec <- 1
+    curr_rep <- 1
     for (i in 1:nrow(c_mat))
     {
       r_vec <- rep(0, ncol(model$e_mat))
@@ -109,16 +116,12 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
       x <- replicate(reps[i], bp(model$e_mat, r_vec, model$p_vec, z0_vec, times))
       for (k in 1:reps[i])
       {
-        if (ncol(e_mat) == 1)
-        {
-          pop <- matrix(c(z0_vec, x[, , k]), ncol = 1)
-        } else
-        {
-          pop <- matrix(rbind(z0_vec, x[, , k]), ncol = ncol(e_mat))
-        }
-        z <- rbind(z, data.frame(cbind(times = c(0, times), rep = r_vec, 
-                                       variable_state = i, dep = c_mat[i, ], data.frame(pop))))
-        r_vec <- r_vec + 1
+
+        pop <- matrix(x[, , k], ncol = ncol(c_mat))
+        dep = matrix(rep(c_mat[i, ], length(times)), ncol = ncol(c_mat))
+        z <- rbind(z, data.frame(cbind(times = times, rep = curr_rep, 
+                                       variable_state = i, data.frame(dep), data.frame(pop))))
+        curr_rep <- curr_rep + 1
       }
     }
   }

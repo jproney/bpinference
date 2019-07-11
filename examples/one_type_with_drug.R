@@ -2,7 +2,7 @@ e_mat =  matrix(c(2,0),ncol=1)
 p_vec = c(1, 1)
 z0 = c(1000) # initial population vector
 tf = 5 #final simulation timepoint
-times = seq(1,tf)
+times = seq(0,tf)
 
 func_deps = c('c[1] + c[2]/(1 + exp(c[3]*(x[1] - c[4])))','c[5]') #logistic function
 priors = rep(list(list(name="normal",params=c(0,.25), bounds=c(0,5))),5)
