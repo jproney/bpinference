@@ -5,13 +5,13 @@ tf = 5 #final simulation timepoint
 times = seq(0,tf)
 
 func_deps = c('c[1] + c[2]/(1 + exp(c[3]*(x[1] - c[4])))','c[5] - c[6]/(1 + exp(c[7]*(x[1] - c[8])))') #logistic function
-priors = rep(list(list(name="normal",params=c(0,.25), bounds=c(0,5))),8)
+priors = rep(list(list(name="normal",params=c(0, .5), bounds=c(0,2))),8)
 priors[[3]] = list(name="uniform",params=c(5,15), bounds=c(5,15))
 priors[[7]] = list(name="uniform",params=c(5,15), bounds=c(5,15))
 
 mod = bp_model(e_mat, p_mat, func_deps, 8, 1)
 
-simulation_params = c(0.15, .2, 10, 0.6, 0.2, .05, 10, .4)
+simulation_params = c(0.15, .2, 10, 0.6, 0.2, .12, 10, .4)
 
 c_mat= matrix(c(0.0,0.2,0.4,0.6,0.8,1.0), ncol=1)
 
