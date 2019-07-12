@@ -1,6 +1,3 @@
-#' @import rstan
-#' @import dplyr
-
 #' function to generate a stan input list from population data
 #' 
 #' @param model The branching process model being estimated
@@ -110,45 +107,23 @@ generate <- function(model, priors, filename)
   declStrs <- rep(0, nprior)
   priorStrs <- rep(0, nprior)
   
+  if(nprior != model$nparams){
+    stop("incorrect number of priors for model!")
+  }
+  
   for (i in 1:nfunc)
   {
     # convert the expression
     exprn <- model$func_deps[[i]]
-    stanstr <- exp_to_stan(exprn, model$nparams, mod$ndep)
+    stanstr <- exp_to_stan(exprn, model$nparams, model$ndep)
     funcs[i] <- sprintf("\t\tr_mat[%d, p_vec[%d]] = %s;\n", i, i, stanstr)
   }
-  
+
   for (p in 1:nprior)
   {
-    ind <- which(!is.na(stringr::str_extract(ALLOWED_DISTRIBUTIONS, paste("^", priors[[p]]$name, 
-                                                 " ", sep = ""))))
-    if (length(ind) > 0)
-    {
-      nparm <- strtoi(stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[1-9]+"))
-      if (nparm != length(priors[[p]]$params))
-      {
-        stop("Incorrect number of parameters for prior distribution")
-      }
-      constraints <- stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[_+]+")
-      for (i in 1:nparm)
-      {
-        if (priors[[p]]$params[i] <= 0 && substr(constraints, i, 
-                                                 i) == "+")
-        {
-          stop("Negative parameter not allowed here!")
-        }
-      }
-    } else
-    {
-      stop("Invalid prior name!")
-    }
-    priorStrs[p] <- sprintf("\tTheta%d ~ %s(%s);\n", p, priors[[p]]$name, 
-                            paste(priors[[p]]$params, collapse = ","))
-    if (!any(is.na(priors[[p]]$bounds)))
-    {
-      declStrs[p] <- sprintf("\treal<lower=%d, upper=%d> Theta%d;\n", 
-                             priors[[p]]$bounds[1], priors[[p]]$bounds[2], p)
-    }
+    parse <- parse_prior(priors[[p]],p)
+    priorStrs[p] <- parse[1]
+    declStrs[p] <- parse[2]
   }
   write(sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
                                                                 collapse = ""), paste(priorStrs, collapse = "")), filename)
@@ -319,6 +294,128 @@ check_valid <- function(exprn, max_params, max_dep)
   {
     stop(paste("Invalid expression:", deparse(exprn), sep = " "))
   }
+}
+
+#' parses prior object into a prior statement that can be inserted into a Stan model (e.g. Theta4 ~ normal(0,1))
+#' @param prior the \code{prior_dist} object to be parsed
+#' @param k the number parameter corresponding to the given prior.
+#' 
+#' @return 2 strings: A parameter declaration the goes in the \code{parameters} block of the Stan model, 
+#' and a prior probability statement that goes in the \code{model} block of the Stan model
+parse_prior = function(prior, k){
+  ind <- which(!is.na(stringr::str_extract(ALLOWED_DISTRIBUTIONS, paste("^", prior$name, 
+                                                                          " ", sep = ""))))
+  if (length(ind) > 0)
+  {
+    nparm <- strtoi(stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[1-9]+"))
+    if (nparm != length(prior$params))
+    {
+      stop("Incorrect number of parameters for prior distribution")
+    }
+    constraints <- stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[_+]+")
+    for (i in 1:nparm)
+    {
+      if (prior$params[i] <= 0 && substr(constraints, i, 
+                                                 i) == "+")
+      {
+        stop("Positive parameter required here!")
+      }
+    }
+  } else
+  {
+    stop("Invalid prior name!")
+  }
+  priorStr <- sprintf("\tTheta%d ~ %s(%s);\n", k, prior$name, 
+                          paste(prior$params, collapse = ","))
+  if (!any(is.na(prior$bounds)))
+  {
+    if(!is.numeric(prior$bounds) || length(prior$bounds) != 2){
+      stop("bounds should be a list of 2 numbers!")
+    }
+    if(prior$bounds[1] >= prior$bounds[2]){
+      stop("Error: lower bounder greater or equal to upper bound!")
+    }
+    declStr <- sprintf("\treal<lower=%s, upper=%s> Theta%d;\n", 
+                           paste(prior$bounds[1]), paste(prior$bounds[2]), k)
+  }
+  else{
+    declStr <- sprintf("\treal Theta%d;\n", k) 
+  }
+  return(c(priorStr, declStr))
+}
+
+#' function to make sure a \code{prior_dist} object actually encodes a vaild prior distribution
+#' 
+#' @param prior, the \code{prior_dist} object being validated
+#' @return the \code{prior_dist} if the prior is valid. Will throw an error otherwise.
+validate_prior_dist <- function(prior){
+  if(attr(prior,'class') != "prior_dist"){
+    stop("validate_prior_dist required an object of type prior_dist")
+  }
+  data <- unclass(prior)
+  ind <- which(!is.na(stringr::str_extract(ALLOWED_DISTRIBUTIONS, paste("^", data$name, 
+                                                                        " ", sep = ""))))
+  if (length(ind) > 0)
+  {
+    nparm <- strtoi(stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[1-9]+"))
+    if (nparm != length(data$params))
+    {
+      
+      stop("Incorrect number of parameters for prior distribution")
+    }
+    constraints <- stringr::str_extract(ALLOWED_DISTRIBUTIONS[ind], "[_+]+")
+    for (i in 1:nparm)
+    {
+      if (data$params[i] <= 0 && substr(constraints, i, 
+                                         i) == "+")
+      {
+        stop("Positive parameter required here!")
+      }
+    }
+    if(data$name == "uniform" && data$params[2] <= data$params[1]){
+      stop("upper bound must be greater than lower in uniform distribution!")
+    }
+  } else
+  {
+    stop("Invalid prior name!")
+  }
+  if (!any(is.na(data$bounds)))
+  {
+    if(!is.numeric(data$bounds) || length(data$bounds) != 2){
+      stop("bounds should be a list of 2 numbers!")
+    }
+    if(data$bounds[1] >= data$bounds[2]){
+      stop("Error: lower bounder greater or equal to upper bound!")
+    }
+  }
+  return(prior)
+}
+
+#' Creates a new \code{prior_dist} object
+#' 
+#' @param name a string with the name of the distribution (e.g. 'normal'). Must match a distribution in \code{ALLOWED_DISTRIBUTIONS} list
+#' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
+#' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
+#' @return a new \code{prior_dist} object
+#' @export
+new_prior_dist <- function(name, params, bounds = NA){
+  return(structure(list(name = name, params = params, bounds = bounds), class = "prior_dist"))
+}
+
+#' User-facing constructor for new \code{prior_dist} objects
+#' 
+#' @param name a string with the name of the distribution (e.g. 'normal'). Must match a distribution in \code{ALLOWED_DISTRIBUTIONS} list
+#' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
+#' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
+#' @return a new \code{prior_dist} object in the arguments specify a valid distribution. Throws an error otherwise.
+prior_dist <- function(name, params, bounds = NA){
+  if(!is.character(name)){
+    stop("prior name must be a string!")
+  }
+  if(!is.numeric(params)){
+    stop("parameters should be numeric!")
+  }
+  return(validate_prior_dist(new_prior_dist(name, params, bounds)))
 }
 
 # Functions below are from https://raw.githubusercontent.com/betanalpha/knitr_case_studies/master/qr_regression/stan_utility.R

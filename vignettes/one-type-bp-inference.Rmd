@@ -73,7 +73,7 @@ simulation_dat <- bpsims(mod, simulation_params, z0, times, 50)
 To do inference, we need to generate a model that will run in Stan. Stan is a flexible probabilistic programming language that allows for us to sample from arbitrary Bayesian posterior distributions. But before we can create a Stan model, we have to define prior distributions which encode our current thoughts about the parameters of the model. For now we'll just let both parameters vary uniformly from 0 to 2.
 
 ```{r}
-priors <- rep(list(list(name="normal",params=c(0, 2), bounds=c(0,2))),n_params)
+priors <- rep(list(prior_dist(name="uniform",params=c(0, 2), bounds=c(0,2))), n_params)
 generate(mod, priors, "one_type_bp_inference.stan")
 ```
 
