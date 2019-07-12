@@ -1,6 +1,3 @@
-#' @import rstan
-#' @import dplyr
-
 #' function to generate a stan input list from population data
 #' 
 #' @param model The branching process model being estimated
@@ -299,6 +296,12 @@ check_valid <- function(exprn, max_params, max_dep)
   }
 }
 
+#' parses prior object into a prior statement that can be inserted into a Stan model (e.g. Theta4 ~ normal(0,1))
+#' @param prior the \code{prior_dist} object to be parsed
+#' @param k the number parameter corresponding to the given prior.
+#' 
+#' @return 2 strings: A parameter declaration the goes in the \code{parameters} block of the Stan model, 
+#' and a prior probability statement that goes in the \code{model} block of the Stan model
 parse_prior = function(prior, k){
   ind <- which(!is.na(stringr::str_extract(ALLOWED_DISTRIBUTIONS, paste("^", prior$name, 
                                                                           " ", sep = ""))))
@@ -341,6 +344,10 @@ parse_prior = function(prior, k){
   return(c(priorStr, declStr))
 }
 
+#' function to make sure a \code{prior_dist} object actually encodes a vaild prior distribution
+#' 
+#' @param prior, the \code{prior_dist} object being validated
+#' @return the \code{prior_dist} if the prior is valid. Will throw an error otherwise.
 validate_prior_dist <- function(prior){
   if(attr(prior,'class') != "prior_dist"){
     stop("validate_prior_dist required an object of type prior_dist")
@@ -384,10 +391,23 @@ validate_prior_dist <- function(prior){
   return(prior)
 }
 
+#' Creates a new \code{prior_dist} object
+#' 
+#' @param name a string with the name of the distribution (e.g. 'normal'). Must match a distribution in \code{ALLOWED_DISTRIBUTIONS} list
+#' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
+#' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
+#' @return a new \code{prior_dist} object
+#' @export
 new_prior_dist <- function(name, params, bounds = NA){
   return(structure(list(name = name, params = params, bounds = bounds), class = "prior_dist"))
 }
 
+#' User-facing constructor for new \code{prior_dist} objects
+#' 
+#' @param name a string with the name of the distribution (e.g. 'normal'). Must match a distribution in \code{ALLOWED_DISTRIBUTIONS} list
+#' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
+#' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
+#' @return a new \code{prior_dist} object in the arguments specify a valid distribution. Throws an error otherwise.
 prior_dist <- function(name, params, bounds = NA){
   if(!is.character(name)){
     stop("prior name must be a string!")
