@@ -110,11 +110,15 @@ generate <- function(model, priors, filename)
   declStrs <- rep(0, nprior)
   priorStrs <- rep(0, nprior)
   
+  if(nprior != model$nparams){
+    stop("incorrect number of priors for model!")
+  }
+  
   for (i in 1:nfunc)
   {
     # convert the expression
     exprn <- model$func_deps[[i]]
-    stanstr <- exp_to_stan(exprn, model$nparams, mod$ndep)
+    stanstr <- exp_to_stan(exprn, model$nparams, model$ndep)
     funcs[i] <- sprintf("\t\tr_mat[%d, p_vec[%d]] = %s;\n", i, i, stanstr)
   }
 
