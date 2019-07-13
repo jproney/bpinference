@@ -1,0 +1,73 @@
+---
+title: "two-type-inference"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{two-type-inference}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+In this vignette, we consider the problem of inferring birth, death, and mutation rates for a two-type Markov branching process in which either cell type is capable of mutating into the other at any time. If you've already looked at `one-type-bp-inference.Rmd` and `one-type-double-logistic.Rmd`, most of this should seem pretty familiar.
+First we load the `bpinference` package.
+
+```{r setup}
+library(ggplot2)
+devtools::load_all()
+library(rstan)
+```
+
+Next, we define the structure of our model. For details on how this works see `setting-up-model.Rmd` and `one-type-bp-inference.Rmd`.
+
+```{r}
+e_mat =  rbind(c(2, 0),c(1,1),c(1,1), c(0,2), c(0,0),c(0,0))
+p_vec = c(1, 1, 2, 2, 1, 2)
+func_deps = c('c[1]','c[2]','c[3]', 'c[4]', 'c[5]', 'c[6]')
+n_params <- 6
+n_deps <- 0
+mod = bp_model(e_mat, p_vec, func_deps, n_params, n_deps)
+```
+
+We now have a `bp_model` object which we can use for simulation and inference. Let's confirm that the sample moments we get from simulating the process agree with what we should expect analytically. To make simulation faster we'll start with a small number of initial cells. This will means that the data won't be perfectly normal, but the moments should still agree with our analytical results regardless of the exact distribution of the data.
+
+```{r}
+simulation_params = c(0.20, 0.10, 0.05, 0.20, 0.25, 0.20)
+z0 <- c(100, 50) # initial population vector
+times <- 1
+simulation_dat <- bpsims(mod, simulation_params, z0, times, 5000)
+mom <- calculate_moments(e_mat, p_vec, simulation_params, z0, 1)
+print(paste("true mean vector:", toString(mom$mu_mat), "sample mean vector:", toString(c(mean(simulation_dat$X1),mean(simulation_dat$X2))), sep=" "))
+print(paste("true covaraince matrix:", toString(mom$sigma_mat), "sample mean vector:", toString(cov(simulation_dat[3:4])), sep=" "))
+```
+
+Now that we've confirmed our simulation is accurate, we'll generate a more realistic dataset with more ancestor cells and fewer replicates. After getting the data we define our priors, generate a stan model, and start sampling.
+
+```{r}
+z0 <- c(1000, 500) # initial population vector
+times <- seq(0,5)
+simulation_dat <- bpsims(mod, simulation_params, z0, times, 50)
+stan_dat <- stan_data_from_simulation(simulation_dat, mod)
+priors <- rep(list(prior_dist(name="uniform",params=c(0,1), bounds=c(0,1))),6)
+generate(mod, priors, "two_type_inference.stan")
+ranges <- matrix(rep(c(0,1), mod$nparams), mod$nparams, 2,byrow = T)
+init <- uniform_initialize(ranges, 4)
+
+options(mc.cores = parallel::detectCores())
+stan_mod <- stan_model(file = "two_type_inference.stan")
+fit_data <- sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
+samples <- data.frame(extract(fit_data))
+```
+
+Let's visualize our posteriors. We'll do this using violin plots:
+
+```{r}
+library(reshape)
+samp_df = melt(samples[,1:6])
+ggplot(samp_df, aes(x=factor(variable),y=value)) + geom_violin() + geom_hline(yintercept = .2) + geom_hline(yintercept = .1) + geom_hline(yintercept = .05) + geom_hline(yintercept = .25)
+```

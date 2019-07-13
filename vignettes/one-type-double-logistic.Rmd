@@ -71,6 +71,7 @@ init = uniform_initialize(ranges, 4)
 Now all that's left is to do is sample. This model is a bit more complex than the simple birth-death model, so it will take significantly longer to finish sampling. Here's the code to run the sampler:
 
 ```{r eval=FALSE}
+options(mc.cores = parallel::detectCores())
 stan_mod <- stan_model(file = "one_type_double_logistic.stan")
 fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
 samples = data.frame(extract(fit_data))
