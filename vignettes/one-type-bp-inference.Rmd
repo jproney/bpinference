@@ -33,10 +33,10 @@ Next, we'll define the structure of our model. This requires three main ingredie
 For our one-type birth-death model, this looks like the following:
 
 ```{r}
-e_mat =  rbind(c(2, 0),c(1,1),c(1,1), c(0,2), c(0,0),c(0,0))
-p_vec = c(1, 1, 2, 2, 1, 2)
-func_deps = c('c[1]','c[2]','c[3]', 'c[4]', 'c[5]', 'c[6]')
-n_params <- 6
+e_mat =  matrix(c(2,0),ncol=1)
+p_vec = c(1, 1)
+func_deps = c('c[1]','c[2]')
+n_params <- 2
 n_deps <- 0
 mod = bp_model(e_mat, p_vec, func_deps, n_params, n_deps)
 ```
@@ -45,7 +45,7 @@ We now have a `bp_model` object which we can use for simulation and inference. A
 
 ```{r}
 simulation_params <- c(0.25, 0.10)
-z0 <- c(1000, 500) # initial population vector
+z0 <- c(1000) # initial population vector
 times <- 1
 simulation_dat <- bpsims(mod, simulation_params, z0, times, 5000)
 ggplot(simulation_dat, aes(x=pop)) + geom_histogram(binwidth = 5, color="black",fill="white") 
