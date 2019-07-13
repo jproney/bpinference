@@ -70,12 +70,15 @@ bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
 #' @export
 bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
 {
-  if ((model$ndep > 0) && (is.na(c_mat) || ncol(c_mat) < model$ndep))
+  if ((model$ndep > 0) && (is.na(c_mat) || ncol(c_mat) != model$ndep))
   {
-    stop("Not enough dependent variables were provided for the model!")
+    stop("Incorrect number of dependent variables were provided for the model!")
   }
   if(length(theta) != model$nparams){
     stop("Wrong number of parameters were provided for the model!")
+  }
+  if(length(z0_vec) != ncol(model$e_mat)){
+    stop("Initial popualation vector has wrong size!")
   }
   if ((model$ndep == 0) && is.na(c_mat))
   {
