@@ -24,8 +24,7 @@ new_bp_model <- function(e_mat, p_vec, func_deps, nparam, ndep)
 validate_bp_model <- function(bpm)
 {
   data <- unclass(bpm)
-  if (!is.vector(data$p_vec) || !all(round(data$p_vec) == data$p_vec) || !all(data$p_vec > 
-                                                                  0))
+  if (!is.vector(data$p_vec) || !all(round(data$p_vec) == data$p_vec) || !all(data$p_vec > 0) || !all(data$p_vec <= data$ntypes))
   {
     stop("p_vec must be a vector of parents for each bith event, where each entry is an positive integer corresponding to the parent type")
   }

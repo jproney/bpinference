@@ -17,6 +17,11 @@ test_that("Incorrect objects are not instantiated",{
   expect_error(bp_model(e_mat, p_mat, func_deps, 8, 1), "Dimensions of e_mat, p_vec, and func_deps do not agree")
   
   e_mat =  matrix(c(2,0,1,1),ncol=2,nrow=2)
+  p_mat = c(1, -1)
+  func_deps = c('c[1]','c[2]') #logistic function
+  expect_error(bp_model(e_mat, p_mat, func_deps, 8, 1), "p_vec must be a vector of parents for each bith event, where each entry is an positive integer corresponding to the parent type")
+  
+  e_mat =  matrix(c(2,0,1,1),ncol=2,nrow=2)
   p_mat = c(1, 1)
   func_deps = c('c[1]','c[2]', 'c[3]') #logistic function
   expect_error(bp_model(e_mat, p_mat, func_deps, 8, 1), "Dimensions of e_mat, p_vec, and func_deps do not agree")
@@ -25,6 +30,11 @@ test_that("Incorrect objects are not instantiated",{
   p_mat = c(1, 1)
   func_deps = c('c[1]','c[2]*x[3]') #logistic function
   expect_error(bp_model(e_mat, p_mat, func_deps, 8, 1),  "Variable x\\[3\\] goes beyond the number of dependent variables specified.")
+  
+  e_mat =  matrix(c(2,0,1,1),ncol=2,nrow=2)
+  p_mat = c(1, 1.5)
+  func_deps = c('c[1]','c[2]*x[3]') #logistic function
+  expect_error(bp_model(e_mat, p_mat, func_deps, 8, 4),  "p_vec must be a vector of parents for each bith event, where each entry is an positive integer corresponding to the parent type")
   
   e_mat =  matrix(c(2,0,1,1),ncol=2,nrow=2)
   p_mat = c(1, 1)
