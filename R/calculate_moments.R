@@ -11,6 +11,18 @@
 calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   
   ntype <- length(z0_vec)
+  if(nrow(e_mat) != length(r_vec)){
+    stop("Incorrect number of rate parameters provided for model!")
+  }
+  if(ncol(e_mat) != ntype){
+    stop("Dimensions of birth events matrix disagree with dimension of initial population vector!")
+  }
+  if(nrow(e_mat) != length(p_vec)){
+    stop("Dimensions of birth events matrix disagree with dimension of parent vector!")
+  }
+  if(any(p_vec > ntype | p_vec < 1 | round(p_vec) != p_vec)){
+    stop("Parent vector must have integer entries between 1 and the number of types!")
+  }
   r_prime_mat <- matrix(rep(0,nrow(e_mat)*ntype), c(nrow(e_mat),ntype))
   r_prime_mat[cbind(1:nrow(e_mat), p_vec)] = r_vec
   
