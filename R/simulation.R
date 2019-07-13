@@ -74,6 +74,9 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
   {
     stop("Not enough dependent variables were provided for the model!")
   }
+  if(length(theta) != model$nparams){
+    stop("Wrong number of parameters were provided for the model!")
+  }
   if ((model$ndep == 0) && is.na(c_mat))
   {
     r_vec <- rep(0, ncol(model$e_mat))
