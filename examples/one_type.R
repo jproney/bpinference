@@ -22,5 +22,5 @@ options(mc.cores = parallel::detectCores())
 ranges = matrix(rep(c(0,1),nrow(e_mat)),nrow(e_mat),2,byrow = T)
 init = uniform_initialize(ranges, 4)
 
-stan_mod <- stan_model(file = "test2.stan")
-fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, iter = 3000, warmup = 1000)
+stan_mod <- rstan::stan_model(file = "test2.stan")
+fit_data = rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, iter = 3000, warmup = 1000)
