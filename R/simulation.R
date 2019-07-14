@@ -6,8 +6,6 @@
 #' @param z0_vec The initial population vector at time 0. Dimensions \code{ntypes} x 1
 #' @param times The timepoints at which to record the population
 #' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
-#'
-#' @export
 bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
 {
   # z0_vec = inital population vector, times = vector of timepoints to record
@@ -70,12 +68,18 @@ bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
 #' @export
 bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
 {
-  if ((model$ndep > 0) && (is.na(c_mat) || ncol(c_mat) < model$ndep))
+  if(attr(model, "class") != "bp_model"){
+    stop("model must be a bp_model object!")
+  }
+  if ((model$ndep > 0) && (is.na(c_mat) || ncol(c_mat) != model$ndep))
   {
-    stop("Not enough dependent variables were provided for the model!")
+    stop("Incorrect number of dependent variables were provided for the model!")
   }
   if(length(theta) != model$nparams){
     stop("Wrong number of parameters were provided for the model!")
+  }
+  if(length(z0_vec) != ncol(model$e_mat)){
+    stop("Initial popualation vector has wrong size!")
   }
   if ((model$ndep == 0) && is.na(c_mat))
   {

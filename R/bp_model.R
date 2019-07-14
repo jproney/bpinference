@@ -23,37 +23,46 @@ new_bp_model <- function(e_mat, p_vec, func_deps, nparam, ndep)
 #' @return The model passed into the function if it is vaild. Throws an exception otherwise
 validate_bp_model <- function(bpm)
 {
-  data <- unclass(bpm)
-  if (!is.vector(data$p_vec) || !all(round(data$p_vec) == data$p_vec) || !all(data$p_vec > 
-                                                                  0))
+  if(!is.numeric(bpm$p_vec) || !is.numeric(bpm$e_mat) || !is.numeric(bpm$nparams) ||  !is.numeric(bpm$ndep)){
+    stop("e_mat, p_mat, ndep, and nparams must all be numeric!")
+  }
+  if (!is.vector(bpm$p_vec) || !all(round(bpm$p_vec) == bpm$p_vec) || !all(bpm$p_vec > 0) || !all(bpm$p_vec <= bpm$ntypes))
   {
     stop("p_vec must be a vector of parents for each bith event, where each entry is an positive integer corresponding to the parent type")
   }
-  if (!is.matrix(data$e_mat) || !all(round(data$e_mat) == data$e_mat || !all(data$e_mat >= 
-                                                                 0)))
+  if (is.vector(bpm$e_mat))
+  {
+    warning("e_mat is a vector, not a matrix. Converting to a one-column matrix")
+    bpm$e_mat <- matrix(bpm$e_mat, ncol = 1)
+  }
+  if (!is.matrix(bpm$e_mat) || !all(round(bpm$e_mat) == bpm$e_mat || !all(bpm$e_mat >=0)))
   {
     stop("e_mat must be a matrix of birth events, where each entry is an integer number of offspring of a given type")
   }
-  if (!(is.vector(data$func_deps)))
+  if (!(is.vector(bpm$func_deps)))
   {
-    stop("func_deps must be a vector of language objects relating brith rates to dependent variables")
+    stop("func_deps must be a vector of strings relating brith rates to dependent variables")
   }
-  
-  if (nrow(data$e_mat) != length(data$p_vec) || nrow(data$e_mat) != length(data$func_deps))
+  new_funcs <- sapply(1:length(bpm$func_deps), function(i)
+  {
+    parse(text = bpm$func_deps[i])[[1]]
+  })
+  bpm$func_deps <- new_funcs
+  if (nrow(bpm$e_mat) != length(bpm$p_vec) || nrow(bpm$e_mat) != length(bpm$func_deps))
   {
     stop("Dimensions of e_mat, p_vec, and func_deps do not agree")
   }
-  if (round(data$nparams) != data$nparams || data$nparams <= 0)
+  if (round(bpm$nparams) != bpm$nparams || bpm$nparams <= 0)
   {
     stop("nparams should be an integer number of parameters")
   }
-  if (round(data$ndep) != data$ndep || data$ndep < 0)
+  if (round(bpm$ndep) != bpm$ndep || bpm$ndep < 0)
   {
     stop("ndep should be an integer number of depedent variables")
   }
-  for (i in 1:length(data$func_deps))
+  for (i in 1:length(bpm$func_deps))
   {
-    check_valid(data$func_deps[[i]], data$nparam, data$ndep)
+    check_valid(bpm$func_deps[[i]], bpm$nparam, bpm$ndep)
   }
   return(bpm)
 }
@@ -70,14 +79,6 @@ validate_bp_model <- function(bpm)
 #' @export
 bp_model <- function(e_mat, p_vec, func_deps, nparam, ndep)
 {
-  if (is.vector(e_mat))
-  {
-    e_mat <- matrix(e_mat, ncol = 1)
-  }
-  new_funcs <- sapply(1:length(func_deps), function(i)
-  {
-    parse(text = func_deps[i])[[1]]
-  })
-  return(validate_bp_model(new_bp_model(e_mat, p_vec, new_funcs, nparam, ndep)))
+  return(validate_bp_model(new_bp_model(e_mat, p_vec, func_deps, nparam, ndep)))
 }
 

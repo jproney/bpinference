@@ -99,7 +99,12 @@ stan_data_from_simulation <- function(sim_data, model)
 #' @export
 generate <- function(model, priors, filename)
 {
-  
+  if(is.null(attr(model, "class")) ||  attr(model, "class") != "bp_model"){
+    stop("model must be a bp_model object!")
+  }
+  if(!is.vector(filename) || !is.character(filename)){
+    stop("filename should be a character vector!")
+  }
   nfunc <- length(model$func_deps)
   funcs <- rep(0, nfunc)
   

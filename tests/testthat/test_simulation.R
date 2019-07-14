@@ -1,5 +1,26 @@
 context("test simulation of multitype branching processes")
 
+test_that("Incorrect inputs to simulation trigger apropriate errors" , {
+  e_mat =  matrix(c(2,0),ncol=1)
+  p_vec = c(1, 1)
+  z0 = c(1000, 500) # initial population vector
+  times = seq(0,5)
+  reps=5
+  func_deps = c('c[1]','c[2]')
+  mod = bp_model(e_mat, p_vec, func_deps, 2, 0)
+  simulation_params = c(0.25, 0.10)
+  expect_error(bpsims(mod, simulation_params, z0, times, reps), "Initial popualation vector has wrong size!")
+  
+  z0 = c(1000)
+  simulation_params = c(0.25, 0.10, .1,.5)
+  expect_error(bpsims(mod, simulation_params, z0, times, reps), "Wrong number of parameters were provided for the model!")
+  
+  func_deps = c('c[1]*log(x[1])','c[2]')
+  mod = bp_model(e_mat, p_vec, func_deps, 2, 1)
+  simulation_params = c(0.25, 0.10)
+  expect_error(bpsims(mod, simulation_params, z0, times, reps), "Incorrect number of dependent variables were provided for the model!")
+})
+
 test_that("Simulation runs without error and returns data of proper size -- no dependencies case",{
   e_mat =  matrix(c(2,0),ncol=1)
   p_vec = c(1, 1)
