@@ -1,8 +1,8 @@
 ---
-title: "one-type-bp-inference"
+title: "first-model"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{one-type-bp-inference}
+  %\VignetteIndexEntry{first-model}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-In this vignette, we consider the problem of inferring the birth and death rate for a one-type Markov branching process using simulated data. This process consists of a population of cells which split into two cells at rate `b` and die at rate `d`, as illustrated by the following diagram:
+Welcome to the `bpinference` pacakge! In this vignette, we consider the problem of inferring the birth and death rate for a one-type Markov branching process using simulated data. This process consists of a population of cells which split into two cells at rate `b` and die at rate `d`, as illustrated by the following diagram:
 
 First we load the `bpinference` package.
 
@@ -24,24 +24,28 @@ devtools::load_all()
 library(rstan)
 ```
 
-Next, we'll define the structure of our model. This requires three main ingredients:
+Next, we'll define the structure of our model using the `bpmodel` constructor. This requires several main ingredients:
 
 * A matrix of possible birth events. A birth event occurs when a parent cell dies and gives rise to some number of offpring. The birth events matrix (defined as `e_mat` in the code) contains one row for each possible birth event, and one column for each cell type. The entry `e_mat[i,j]` represents how many cells of type `j` are born when birth event `i` occurs. (Note that `e_mat` must always be a **matrix**, even when there is only one cell type).
+    + In this case there are 2 birth events: a parent cell can die and give rise to 2 offspring (mitosis) or it can die and give rise to no offspring (apoptosis). We have two rows in the birth matrix, one for each of these events.
 * A parents vector. The parents vector (defined as `p_vec`) has one entry for each birth event. The entry `p_vec[i]` contains the cell type of the parent which dies when birth even `i` occurs.
-* A vector of functional dependencies. Sometimes, we may want the rates of various birth events in our model to vary as some function of an environmental variance. To acoomplish this, we specify functional dependencies as strings using a specific syntax. In essence, this syntax expects parameter number `i` to be referenced as `'c[i]'`, and dependent variable number `j` to be referenced as `'x[j]'`. For full detail on this syntax, see the man page for `bp_model`. In this particular case, we have no dependent varianbles. Therefore we only need two parameters, one for birth and one for death. 
+    + In this case, we only have one cell type, so the parent vector is just `c(1,1)`
+* A vector of functional dependencies. Sometimes, we may want the rates of various birth events in our model to vary as some function of an environmental varianbles. To acoomplish this, we specify functional dependencies as strings using a specific syntax. In essence, this syntax expects parameter number `i` to be referenced as `'c[i]'`, and dependent variable number `j` to be referenced as `'x[j]'`. For example, if we wanted our birth rate to increase linearly as a function of one dependent variable and for death to remain constant, we would write `func_deps = c('c[1]*x[1]','c[2]')`.   
+    + In this particular case, we have no dependent variables. Therefore we only need two parameters, one for birth and one for death. Our functional dependencies vector becomes `c('c[1]','c[2]')`.
+* Finally we have to specify the number of parameters and dependent variables in our model, and then enter all of our data into the `bp_model` constructor.
 
-For our one-type birth-death model, this looks like the following:
+Putting this all together, here's what it looks like:
 
 ```{r}
-e_mat =  matrix(c(2,0),ncol=1)
-p_vec = c(1, 1)
-func_deps = c('c[1]','c[2]')
+e_mat <-  matrix(c(2,0),ncol=1)
+p_vec <- c(1, 1)
+func_deps <- c('c[1]','c[2]')
 n_params <- 2
 n_deps <- 0
-mod = bp_model(e_mat, p_vec, func_deps, n_params, n_deps)
+mod <- bp_model(e_mat, p_vec, func_deps, n_params, n_deps)
 ```
 
-We now have a `bp_model` object which we can use for simulation and inference. As we did in the one type case, et's pick some parameter values and simulate a lot of data to confirm normality.
+We now have a `bp_model` object which we can use for simulation and inference. For fun let's pick some parameter values and simulate a lot of data. We'll do this using the `bpsims` function. The `bpsims` functions takes a `bpmodel` object, a set of parameters to plug into the model for simulation (`simulation_params`), an initial population at time 0 (`z0`), a vector of timepoints at which to record the simulated population, and a number of replications.
 
 ```{r}
 simulation_params <- c(0.25, 0.10)
@@ -51,7 +55,7 @@ simulation_dat <- bpsims(mod, simulation_params, z0, times, 5000)
 ggplot(simulation_dat, aes(x=pop)) + geom_histogram(binwidth = 5, color="black",fill="white") 
 ```
 
-The data look very normal, which is what we should expect for a large starting population `z0 = 1000`. Are the mean and variance of this distribution similar to what we should expect analytically? We can check using the `calculate_moments` function:
+The data look very normal, which is what we should expect for a large starting population `z0 = 1000`. Are the mean and variance of this distribution similar to what we should expect analytically? We can check using the `calculate_moments` function. `calculate moments` takes the birth matrix, parents vectors, and birth rates as direct parameters, as well as an initial population and the timepoint for which the moments are being calculated.
 
 ```{r}
 mom <- calculate_moments(e_mat, p_vec, simulation_params, z0, 1)
@@ -77,7 +81,9 @@ priors <- rep(list(prior_dist(name="uniform",params=c(0, 2), bounds=c(0,2))), n_
 generate(mod, priors, "one_type_bp_inference.stan")
 ```
 
-The `generate` function automatically creates a stan model for us to sample from. There should now be a file named "one_type_bp_inference.stan" in the working directory with a lot of code. This code essentially just computes the likelihood for our model given some input data. Feel free to read the generated code, and even modify it if you have a good reason.
+The `generate` function automatically creates a stan model for us to sample from. There should now be a file named "one_type_bp_inference.stan" in the working directory with a lot of code. This code essentially just computes the likelihood for our model given some input data. 
+
+Note that this package is *not* intended to completely obscure Stan from the user. Stan is a great tool for Bayesian inference, and it lies at the core of all inference performed in this package. Instead of the `generate` function being an abstract interface into Stan, it should be viewed more as a utility for generating Stan models which share a lot of common features. Users are encouraged to examine and modify the generated Stan files before sampling from them.
 
 The last thing we need to do is convert our simulation data into a form that the Stan model will understand. We can do this using the `stan_data_from_simulation` function. At the same time, we'll create some unformly random inital values for Stan's MCMC algorithm.
 
@@ -109,3 +115,5 @@ In addition to just using point estimates of the posterior means, we can view ou
 ggplot(samples, aes(x = Theta1)) + geom_histogram(binwidth = .004, color='black', fill='white')
 ggplot(samples, aes(x = Theta2)) + geom_histogram(binwidth = .004, color='black', fill='white')
 ```
+
+To learn how to infer models with complicated functional dependencies and multiple types, check out `two-type-inference.Rmd` and `one-type-double-logistic.Rmd`.
