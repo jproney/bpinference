@@ -10,7 +10,7 @@ install.packages(devtools)
 ```
 Then install the `bpinference` pacakge:
 ```
-devtools::github_install('jproney/bpinference')
+devtools::install_github('jproney/bpinference')
 ```
 This will install `bpinference` and all of its dependencies.
 
