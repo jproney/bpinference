@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-In this vignette, we consider the problem of inferring birth, death, and mutation rates for a two-type Markov branching process in which either cell type is capable of mutating into the other at any time. If you've already looked at `one-type-bp-inference.Rmd` and `one-type-double-logistic.Rmd`, most of this should seem pretty familiar.
+In this vignette, we consider the problem of inferring birth, death, and mutation rates for a two-type Markov branching process in which either cell type is capable of mutating into the other at any time. If you've already looked at `first-model.Rmd` and `one-type-double-logistic.Rmd`, most of this should seem pretty familiar.
 First we load the `bpinference` package.
 
 ```{r setup}
@@ -23,7 +23,7 @@ devtools::load_all()
 library(rstan)
 ```
 
-Next, we define the structure of our model. For details on how this works see `setting-up-model.Rmd` and `one-type-bp-inference.Rmd`.
+Next, we define the structure of our model. For details on how this works see `first-model.Rmd`.
 
 ```{r}
 e_mat =  rbind(c(2, 0),c(1,1),c(1,1), c(0,2), c(0,0),c(0,0))
