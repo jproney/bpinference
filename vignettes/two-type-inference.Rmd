@@ -53,7 +53,7 @@ z0 <- c(1000, 500) # initial population vector
 times <- seq(0,5)
 simulation_dat <- bpsims(mod, simulation_params, z0, times, 50)
 stan_dat <- stan_data_from_simulation(simulation_dat, mod)
-priors <- rep(list(prior_dist(name="uniform",params=c(0,1), bounds=c(0,1))),6)
+priors <- rep(list(prior_dist(name="normal",params=c(0,.25), bounds=c(0,5))),6)
 generate(mod, priors, "two_type_inference.stan")
 ranges <- matrix(rep(c(0,1), mod$nparams), mod$nparams, 2,byrow = T)
 init <- uniform_initialize(ranges, 4)
