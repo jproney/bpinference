@@ -1,26 +1,27 @@
-e_mat =  matrix(c(2,0),ncol=1)
-p_vec = c(1, 1)
-z0 = c(1000) # initial population vector
-tf = 5 #final simulation timepoint
-times = seq(0,tf)
+e_mat <-  matrix(c(2,0),ncol=1)
+p_vec <- c(1, 1)
+z0 <- c(1000) # initial population vector
+tf <- 5 #final simulation timepoint
+times <- seq(0,tf)
 
-func_deps = c('c[1]','c[2]')
-priors = rep(list(list(name="uniform",params=c(0, 1), bounds=c(0,2))),2)
+func_deps <- c('c[1]','c[2]')
+priors <- rep(list(list(name="uniform",params=c(0, 1), bounds=c(0,2))),2)
 
-mod = bp_model(e_mat, p_vec, func_deps, 2, 0)
+mod <- bp_model(e_mat, p_vec, func_deps, 2, 0)
 
-simulation_params = c(0.25, 0.10)
+simulation_params <- c(0.25, 0.10)
 
-simulation_dat = bpsims(mod, simulation_params, z0, times, 50)
+simulation_dat <- bpsims(mod, simulation_params, z0, times, 50)
 
-dat = stan_data_from_simulation(simulation_dat, mod)
+dat <- stan_data_from_simulation(simulation_dat, mod)
 
-generate(mod, priors, "test2.stan")
+generate(mod, priors, "one_type.stan")
 
 options(mc.cores = parallel::detectCores())
 
-ranges = matrix(rep(c(0,1),nrow(e_mat)),nrow(e_mat),2,byrow = T)
-init = uniform_initialize(ranges, 4)
+ranges <- matrix(rep(c(0,1),nrow(e_mat)),nrow(e_mat),2,byrow = T)
+init <- uniform_initialize(ranges, 4)
 
-stan_mod <- rstan::stan_model(file = "test2.stan")
-fit_data = rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, iter = 3000, warmup = 1000)
+stan_mod <- rstan::stan_model(file = "one_type.stan")
+fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, iter = 3000, warmup = 1000)
+file.remove("one_type.stan")
