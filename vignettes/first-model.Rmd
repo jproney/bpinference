@@ -16,6 +16,10 @@ knitr::opts_chunk$set(
 
 Welcome to the `bpinference` pacakge! In this vignette, we consider the problem of inferring the birth and death rate for a one-type Markov branching process using simulated data. This process consists of a population of cells which split into two cells at rate `b` and die at rate `d`, as illustrated by the following diagram:
 
+```{r, out.width = "200px", echo=FALSE}
+knitr::include_graphics("1_type_bd.png")
+```
+
 First we load the `bpinference` package.
 
 ```{r setup}
@@ -28,7 +32,7 @@ Next, we'll define the structure of our model using the `bpmodel` constructor. T
     + In this case there are 2 birth events: a parent cell can die and give rise to 2 offspring (mitosis) or it can die and give rise to no offspring (apoptosis). We have two rows in the birth matrix, one for each of these events.
 * A parents vector. The parents vector (defined as `p_vec`) has one entry for each birth event. The entry `p_vec[i]` contains the cell type of the parent which dies when birth even `i` occurs.
     + In this case, we only have one cell type, so the parent vector is just `c(1,1)`
-* A vector of functional dependencies. Sometimes, we may want the rates of various birth events in our model to vary as some function of an environmental varianbles. To acoomplish this, we specify functional dependencies as strings using a specific syntax. In essence, this syntax expects parameter number `i` to be referenced as `'c[i]'`, and dependent variable number `j` to be referenced as `'x[j]'`. For example, if we wanted our birth rate to increase linearly as a function of one dependent variable and for death to remain constant, we would write `func_deps = c('c[1]*x[1]','c[2]')`.   
+* A vector of functional dependencies. Sometimes, we may want the rates of various birth events in our model to vary as some function of environmental variables. To acoomplish this, we specify functional dependencies as strings using a specific syntax. In essence, this syntax expects parameter number `i` to be referenced as `'c[i]'`, and dependent variable number `j` to be referenced as `'x[j]'`. For example, if we wanted our birth rate to increase linearly as a function of one dependent variable and for death to remain constant, we would write `func_deps = c('c[1]*x[1]','c[2]')`.   
     + In this particular case, we have no dependent variables. Therefore we only need two parameters, one for birth and one for death. Our functional dependencies vector becomes `c('c[1]','c[2]')`.
 * Finally we have to specify the number of parameters and dependent variables in our model, and then enter all of our data into the `bp_model` constructor.
 
@@ -96,7 +100,8 @@ With that, we're ready to sample! The following code will tell Stan to sample fr
 ```{r}
 options(mc.cores = parallel::detectCores())
 stan_mod <- rstan::stan_model(file = "one_type_bp_inference.stan")
-fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 50, init =init, iter=3000,warmup=1000)
+fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4,
+                            refresh = 50, init =init, iter=3000,warmup=1000)
 samples <- data.frame(rstan::extract(fit_data))
 ```
 
