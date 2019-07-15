@@ -402,7 +402,6 @@ validate_prior_dist <- function(prior){
 #' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
 #' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
 #' @return a new \code{prior_dist} object
-#' @export
 new_prior_dist <- function(name, params, bounds = NA){
   return(structure(list(name = name, params = params, bounds = bounds), class = "prior_dist"))
 }
@@ -413,6 +412,8 @@ new_prior_dist <- function(name, params, bounds = NA){
 #' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
 #' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
 #' @return a new \code{prior_dist} object in the arguments specify a valid distribution. Throws an error otherwise.
+#' 
+#' @export
 prior_dist <- function(name, params, bounds = NA){
   if(!is.character(name)){
     stop("prior name must be a string!")

@@ -1,6 +1,6 @@
 ---
 title: "first-model"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{first-model}
   %\VignetteEngine{knitr::rmarkdown}
@@ -19,9 +19,7 @@ Welcome to the `bpinference` pacakge! In this vignette, we consider the problem 
 First we load the `bpinference` package.
 
 ```{r setup}
-library(ggplot2)
-devtools::load_all()
-library(rstan)
+library(bpinference)
 ```
 
 Next, we'll define the structure of our model using the `bpmodel` constructor. This requires several main ingredients:

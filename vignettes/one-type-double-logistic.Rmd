@@ -1,6 +1,6 @@
 ---
 title: "one-type-double-logistic"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{one-type-double-logistic}
   %\VignetteEngine{knitr::rmarkdown}
@@ -70,7 +70,7 @@ init = uniform_initialize(ranges, 4)
 
 Now all that's left is to do is sample. This model is a bit more complex than the simple birth-death model, so it will take significantly longer to finish sampling. Here's the code to run the sampler:
 
-```{r eval=FALSE}
+```{r}
 options(mc.cores = parallel::detectCores())
 stan_mod <- stan_model(file = "one_type_double_logistic.stan")
 fit_data = sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
@@ -78,7 +78,7 @@ samples = data.frame(extract(fit_data))
 ```
 
 To visualize how well we did, we'll plot a cloud of response curves that we sampled from the posterior and compare them with ground truth. 
-```{r eval=FALSE}
+```{r}
 compute_birth_curve = 
   function(params, doses){sapply(doses, function(x){params[1] + params[2]/(1 + exp(params[3]*(x - params[4])))})}
 compute_death_curve = 
@@ -91,7 +91,6 @@ dcurves = cbind(melt(data.frame(sample_death_curves)),dose = seq(0,1,length.out 
 ggplot(dcurves, aes(x=dose, y=value, group = factor(variable))) + geom_line(aes(color="estimated death rate"),alpha=.03) + geom_line(data = bcurves,aes(color = "estimated birth rate"), alpha = .03) + ylab("parameter value") + geom_line(data = data.frame(cbind(dose = seq(0,1,length.out = 1000), value = compute_birth_curve(simulation_params[1:4],seq(0,1,length.out = 1000)),variable=1))) + geom_line(data = data.frame(cbind(dose = seq(0,1,length.out = 1000), value = compute_death_curve(simulation_params[5:8],seq(0,1,length.out = 1000)),variable=1))) + guides(colour = guide_legend(override.aes = list(alpha = 1)))
 ```
 
-![](double_log_inference_plot.png)
 
 That looks pretty good! Notice how we've been able to tease apart changes in birth and death rates just from looking at total cell counts. Current widely-used methods in pharmacology can only measure changes in net growth rate, so using a Bayesian growth assay like this one could help give us a finer-grained understanding of how drugs act on various cell lines.
 
