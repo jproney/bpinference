@@ -13,7 +13,7 @@ do
  export nsims
  for ((c=1; c<=$nreps; c++))
  do
-   sbatch -o /dev/null --job-name=three_type \
+   sbatch --job-name=three_type \
    $folder_dir/cluster_scripts/three_type_benchmark.sbatch 
    echo "${nsims}"
  done

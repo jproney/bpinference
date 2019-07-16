@@ -13,9 +13,9 @@ do
  export nsims
  for ((c=1; c<=$nreps; c++))
  do
-   sbatch -o /dev/null --job-name=logistic_benchmark \
+   sbatch --job-name=double_logistic_benchmark \
    $folder_dir/cluster_scripts/double_logistic_benchmark.sbatch 
    echo "${nsims}"
  done
-done < $folder_dir/benchmarks/double_logistic_benchmark_params.txt
+done < $folder_dir/benchmarks/double_logistic_params.txt
 
