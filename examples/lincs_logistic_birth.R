@@ -41,8 +41,8 @@ stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .5), bounds = c(0,5))
-priors[[3]] <- prior_dist(name="uniform",params=c(5,15), bounds=c(5,15))
-priors[[4]] <- prior_dist(name="uniform",params=c(-2,2), bounds=c(-2,2))
+priors[[3]] <- prior_dist(name="uniform",params=c(1,10), bounds=c(1,10))
+priors[[4]] <- prior_dist(name="uniform",params=c(-3,3), bounds=c(-3,3))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 
 generate(mod, priors, "lincs_birth_logistic.stan")
@@ -51,7 +51,7 @@ options(mc.cores = parallel::detectCores())
 
 ranges <- matrix(rep(c(0,1), mod$nparams),ncol=2,byrow = T)
 ranges[4,] <- c(-1,1)
-ranges[3,] <- c(5,15)
+ranges[3,] <- c(1,10)
 init <- uniform_initialize(ranges, 4)
 
 stan_mod <- rstan::stan_model(file = "lincs_birth_logistic.stan")

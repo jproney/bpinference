@@ -1,6 +1,6 @@
 # run this on the DFCI Kraken cluster
 args <- commandArgs(trailingOnly = TRUE)
-library(bpinference)
+devtools::load_all()
 cell_name = args[1]
 drug = args[2]
 
@@ -34,8 +34,8 @@ stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .5), bounds = c(0,5))
-priors[[3]] <- prior_dist(name="uniform",params=c(5,15), bounds=c(5,15))
-priors[[4]] <- prior_dist(name="uniform",params=c(-2,2), bounds=c(-2,2))
+priors[[3]] <- prior_dist(name="uniform",params=c(1,10), bounds=c(1,10))
+priors[[4]] <- prior_dist(name="uniform",params=c(-3,3), bounds=c(-3,3))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 
 generate(mod, priors, "lincs_birth_logistic.stan")

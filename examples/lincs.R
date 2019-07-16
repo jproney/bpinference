@@ -32,7 +32,7 @@ small_data = dplyr::filter(lincs_data, Cell.Name == "MCF7", Small.Molecule.Name 
 stan_dat = lincs_to_stan(small_data, mod)
 priors <- rep(list(list(name="normal",params=c(0,.25), bounds=c(0,5))),5)
 priors[[4]] <- list(name="uniform",params=c(-2,2), bounds=c(-2,2))
-priors[[3]] <- list(name="uniform",params=c(5,15), bounds=c(5,15))
+priors[[3]] <- list(name="uniform",params=c(1,10), bounds=c(1,10))
 
 generate(mod, priors, "lincs_model.stan")
 
@@ -40,7 +40,7 @@ options(mc.cores = parallel::detectCores())
 
 ranges <- matrix(rep(c(0,1), mod$nparams),ncol=2,byrow = T)
 ranges[4,] <- c(-1,1)
-ranges[3,] <- c(5,15)
+ranges[3,] <- c(1,10)
 init <- uniform_initialize(ranges, 4)
 
 stan_mod <- rstan::stan_model(file = "lincs_model.stan")
