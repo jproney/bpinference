@@ -47,7 +47,13 @@ ranges[4,] <- c(-1,1)
 ranges[3,] <- c(1,10)
 init <- uniform_initialize(ranges, 4)
 
-stan_mod <- rstan::stan_model(file = "lincs_birth_logistic.stan")
+if(file.exists("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")){
+  stan_mod <- readRDS("/michorlab/jroney/bpinference/lincs_birth_logistic.RDS")
+} else{
+  stan_mod <- rstan::stan_model(file = "lincs_birth_logistic.stan")
+  saveRDS(stan_mod, "/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")
+}
+
 fit_data <- rstan::sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init, iter=3000)
 
 samples = data.frame(extract(fit_data))
