@@ -10,3 +10,4 @@ stanfiles/
 inst/doc
 *.tex
 lincs-data/
+slurm*

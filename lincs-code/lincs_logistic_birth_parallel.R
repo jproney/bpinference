@@ -44,7 +44,7 @@ options(mc.cores = parallel::detectCores())
 
 ranges <- matrix(rep(c(0,1), mod$nparams),ncol=2,byrow = T)
 ranges[4,] <- c(-1,1)
-ranges[3,] <- c(5,15)
+ranges[3,] <- c(1,10)
 init <- uniform_initialize(ranges, 4)
 
 stan_mod <- rstan::stan_model(file = "lincs_birth_logistic.stan")
