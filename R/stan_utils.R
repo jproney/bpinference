@@ -441,8 +441,28 @@ check_exceeded_treedepth <- function(fit, max_depth = 10) {
   n = length(treedepths[sapply(treedepths, function(x) x == max_depth)])
   N = length(treedepths)
   
-  print(sprintf('%s of %s iterations saturated the maximum tree depth of %s (%s%%)',
+  return(sprintf('%s of %s iterations saturated the maximum tree depth of %s (%s%%)',
                 n, N, max_depth, 100 * n / N))
   if (n > 0)
-    print('  Run again with max_depth set to a larger value to avoid saturation')
+    return('  Run again with max_depth set to a larger value to avoid saturation')
+}
+
+# Checks the potential scale reduction factors
+check_rhat <- function(fit) {
+  fit_summary <- summary(fit, probs = c(0.5))$summary
+  N <- dim(fit_summary)[[1]]
+  
+  no_warning <- TRUE
+  for (n in 1:N) {
+    rhat <- fit_summary[,6][n]
+    if ((rhat > 1.1 || is.infinite(rhat)) && !is.nan(rhat)) {
+      print(sprintf('Rhat for parameter %s is %s!',
+                    rownames(fit_summary)[n], rhat))
+      no_warning <- FALSE
+    }
+  }
+  if (no_warning)
+    return('Rhat looks reasonable for all parameters')
+  else
+    return('Rhat above 1.1 indicates that the chains very likely have not mixed')
 }

@@ -9,3 +9,4 @@ MNIST-data
 stanfiles/
 inst/doc
 *.tex
+lincs-data/
