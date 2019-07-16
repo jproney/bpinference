@@ -65,11 +65,10 @@ sample_growth_curves = apply(samples[1:800,], 1, compute_growth_curve, seq(min(s
 gcurves = cbind(reshape::melt(data.frame(sample_growth_curves)),dose = seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000))
 
 save(samples, small_data, file=sprintf("lincs-data/inference/%s_%s.rda",cell_name, drug))
-png(sprintf("lincs-data/inference/%s_%s.png",cell_name, drug))
-plt <- ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.03, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
-print(plt)
-dev.off()
 
 
 warns = sprintf("%s_%s Div: %d Treedepth: %s Rhat: %s\n", cell_name, drug, check_div(fit_data), check_exceeded_treedepth(fit_data), check_rhat(fit_data))
 cat(warns, file="lincs-data/inference/warnings.txt",append = TRUE)
+
+ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.03, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times)) + ggtitle(sprintf("%s_%s.rda",cell_name, drug))
+file.rename("Rplots.pdf",sprintf("%s_%s.rda",cell_name, drug))
