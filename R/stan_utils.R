@@ -449,7 +449,7 @@ check_exceeded_treedepth <- function(fit, max_depth = 10) {
 
 # Checks the potential scale reduction factors
 check_rhat <- function(fit) {
-  fit_summary <- summary(fit, probs = c(0.5))$summary
+  fit_summary <- rstan::summary(fit, probs = c(0.5))$summary
   N <- dim(fit_summary)[[1]]
   
   no_warning <- TRUE
