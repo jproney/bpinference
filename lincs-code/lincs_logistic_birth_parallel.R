@@ -26,7 +26,7 @@ prepare_data <- function(cellname, drug){
 
 small_data = prepare_data(cell_name, drug)
 gr = log(small_data$final_pop/small_data$init_pop)/3
-gr_range = mean(gr[1:3]) - mean(tail(gr,3)) #empirical prior mean
+gr_range = max(mean(gr[1:3]) - mean(tail(gr,3)),0) #empirical prior mean
 
 ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 
