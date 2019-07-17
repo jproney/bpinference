@@ -8,9 +8,8 @@ drugs =   c('Seliciclib','AT-7519','AZD7762','AZD8055','Sorafenib','CP466722','C
             'Omipalisib','Buparlisib','XL147','Y39983','Nintedanib','Foretinib','AZD 5438','Pelitinib','Luminespib','AZD8330','TGX221','GSK1059615','Brivanib','CHIR-99021','Linifanib',
             'PIK-93','Dactolisib','Alpelisib','GDC-0980','Mitoxantrone','Radicicol','Withaferin A')
 
-
 cell_line = "BT-20"
-drug = "NVP-AEW541"
+drug = "Linsitinib"
 
 command = sprintf("scp jamesr@kraken.dfci.harvard.edu:/michorlab/jroney/bpinference/lincs-data/inference_1/%s_%s.rda %s_%s.rda", cell_line, drug, cell_line, drug)
 system(command, wait = TRUE)
