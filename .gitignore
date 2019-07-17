@@ -1,4 +1,5 @@
 *.rds
+*.rda
 *.RDS
 .RData
 data
