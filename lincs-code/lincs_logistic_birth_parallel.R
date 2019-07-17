@@ -26,17 +26,17 @@ prepare_data <- function(cellname, drug){
 
 small_data = prepare_data(cell_name, drug)
 gr = log(small_data$final_pop/small_data$init_pop)/3
-gr_range = (quantile(gr,.75) - quantile(gr,.25)) #empirical prior mean
+gr_range = mean(gr[1:3]) - mean(tail(gr,3)) #empirical prior mean
 
 ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 
 stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_pop = matrix(small_data$init_pop), c_mat = matrix(small_data$drug_conc), times = small_data$times)
 priors = list()
-priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
+priors[[1]] <- prior_dist(name="normal", params = c(0, .5), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .5), bounds = c(0,5))
-priors[[3]] <- prior_dist(name="uniform",params=c(0,10), bounds=c(0,10))
+priors[[3]] <- prior_dist(name="normal",params=c(0,5), bounds=c(0,10))
 priors[[4]] <- prior_dist(name="uniform",params=c(-5,5), bounds=c(-5,5))
-priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
+priors[[5]] <- prior_dist(name="normal", params = c(0, .5), bounds = c(0,5))
 
 generate(mod, priors, "lincs_birth_logistic.stan")
 

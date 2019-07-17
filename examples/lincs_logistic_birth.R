@@ -29,18 +29,18 @@ prepare_data <- function(cellname, drug){
   return(new_data)
 }
 
-cell_name = "Hs 578T"
-drug = 'YM 201636'
+cell_name = "Hs-578T"
+drug = 'YM-201636'
 small_data = prepare_data(cell_name, drug)
 gr = log(small_data$final_pop/small_data$init_pop)/3
-gr_range = .95*(max(gr) - min(gr)) #empirical prior mean
+gr_range = mean(gr[1:3]) - mean(tail(gr,3)) #empirical prior mean
 
 ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 
 stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_pop = matrix(small_data$init_pop), c_mat = matrix(small_data$drug_conc), times = small_data$times)
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
-priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .5), bounds = c(0,5))
+priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .25), bounds = c(0,5))
 priors[[3]] <- prior_dist(name="uniform",params=c(1,10), bounds=c(1,10))
 priors[[4]] <- prior_dist(name="uniform",params=c(-3,3), bounds=c(-3,3))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
