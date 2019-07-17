@@ -12,7 +12,7 @@ do
  export cell_name
  export drug
  sbatch --job-name=lincs \
- $folder_dir/lincs-data/lincs.sbatch 
+ $folder_dir/lincs-code/lincs.sbatch 
  echo "${cell_name}"
  echo "${drug}"
-done < $folder_dir/lincs-data/lincs_inputs.txt
+done < $folder_dir/lincs-code/lincs_inputs.txt

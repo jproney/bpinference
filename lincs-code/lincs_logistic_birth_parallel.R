@@ -48,7 +48,7 @@ ranges[3,] <- c(1,10)
 init <- uniform_initialize(ranges, 4)
 
 if(file.exists("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")){
-  stan_mod <- readRDS("/michorlab/jroney/bpinference/lincs_birth_logistic.RDS")
+  stan_mod <- readRDS("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")
 } else{
   stan_mod <- rstan::stan_model(file = "lincs_birth_logistic.stan")
   saveRDS(stan_mod, "/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")
@@ -71,4 +71,4 @@ warns = sprintf("%s_%s Div: %d Treedepth: %s Rhat: %s\n", cell_name, drug, check
 cat(warns, file="lincs-data/inference/warnings.txt",append = TRUE)
 
 ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.03, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times)) + ggtitle(sprintf("%s_%s.rda",cell_name, drug))
-file.rename("Rplots.pdf",sprintf("%s_%s.rda",cell_name, drug))
+file.rename("Rplots.pdf",sprintf("%s_%s.pdf",cell_name, drug))
