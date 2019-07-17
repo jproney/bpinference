@@ -34,8 +34,8 @@ stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .5), bounds = c(0,5))
-priors[[3]] <- prior_dist(name="uniform",params=c(1,10), bounds=c(1,10))
-priors[[4]] <- prior_dist(name="uniform",params=c(-3,3), bounds=c(-3,3))
+priors[[3]] <- prior_dist(name="uniform",params=c(0,10), bounds=c(0,10))
+priors[[4]] <- prior_dist(name="uniform",params=c(-5,5), bounds=c(-5,5))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 
 generate(mod, priors, "lincs_birth_logistic.stan")
@@ -43,8 +43,8 @@ generate(mod, priors, "lincs_birth_logistic.stan")
 options(mc.cores = parallel::detectCores())
 
 ranges <- matrix(rep(c(0,1), mod$nparams),ncol=2,byrow = T)
-ranges[4,] <- c(-1,1)
-ranges[3,] <- c(1,10)
+ranges[4,] <- c(-2,2)
+ranges[3,] <- c(0,10)
 init <- uniform_initialize(ranges, 4)
 
 if(file.exists("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")){
@@ -69,6 +69,3 @@ save(samples, small_data, file=sprintf("lincs-data/inference/%s_%s.rda",cell_nam
 
 warns = sprintf("%s_%s Div: %d Treedepth: %s Rhat: %s\n", cell_name, drug, check_div(fit_data), check_exceeded_treedepth(fit_data), check_rhat(fit_data))
 cat(warns, file="lincs-data/inference/warnings.txt",append = TRUE)
-
-ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.03, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times)) + ggtitle(sprintf("%s_%s.rda",cell_name, drug))
-file.rename("Rplots.pdf",sprintf("%s_%s.pdf",cell_name, drug))
