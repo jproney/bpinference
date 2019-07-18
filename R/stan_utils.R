@@ -23,7 +23,7 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
     stop("c_mat does not contain enough dependent variables for the model")
   }
   if (model$ndep == 0 && is.na(c_mat))
-  {
+  { #fill c_mat with dummy data
     c_mat_unique <- matrix(0, 1, 1)
     ndep_levels <- 1
     ndep <- 1
