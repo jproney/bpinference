@@ -25,8 +25,12 @@ prepare_data <- function(cellname, drug){
 }
 
 small_data = prepare_data(cell_name, drug)
-gr = log(small_data$final_pop/small_data$init_pop)/3
-gr_range = max(mean(gr[1:3]) - mean(tail(gr,3)),0) #empirical prior mean
+bin_means = dplyr::summarise(dplyr::group_by(small_data, drug_conc), Mean = mean(final_pop))
+gr_drop = (bin_means$Mean - dplyr::lag(bin_means$Mean))[-1]
+drop_idx = which.min(gr_drop)+1
+gr_midpoint = bin_means[drop_idx,]$drug_conc #empirical prior
+
+gr_range = max(bin_means[1,]$Mean - bin_means[nrow(bin_means),]$Mean,0.01) #empirical prior
 
 ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 
@@ -34,9 +38,10 @@ stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .5), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .5), bounds = c(0,5))
-priors[[3]] <- prior_dist(name="normal",params=c(0,5), bounds=c(0,10))
-priors[[4]] <- prior_dist(name="uniform",params=c(-5,5), bounds=c(-5,5))
+priors[[3]] <- prior_dist(name="normal",params=c(0,7), bounds=c(0,10))
+priors[[4]] <- prior_dist(name="normal",params=c(gr_midpoint,2), bounds=c(-6,6))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .5), bounds = c(0,5))
+
 
 generate(mod, priors, "lincs_birth_logistic.stan")
 
