@@ -29,8 +29,8 @@ prepare_data <- function(cellname, drug){
   return(new_data)
 }
 
-cell_name = "Hs-578T"
-drug = 'YM-201636'
+cell_name = "BT-20"
+drug = "NVP-AEW541"
 small_data = prepare_data(cell_name, drug)
 gr = log(small_data$final_pop/small_data$init_pop)/3
 gr_range = mean(gr[1:3]) - mean(tail(gr,3)) #empirical prior mean
@@ -41,8 +41,8 @@ stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .25), bounds = c(0,5))
-priors[[3]] <- prior_dist(name="uniform",params=c(1,10), bounds=c(1,10))
-priors[[4]] <- prior_dist(name="uniform",params=c(-3,3), bounds=c(-3,3))
+priors[[3]] <- prior_dist(name="normal",params=c(0,2), bounds=c(0,10))
+priors[[4]] <- prior_dist(name="normal",params=c(0,2), bounds=c(-5,5))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 
 generate(mod, priors, "lincs_birth_logistic.stan")
@@ -55,7 +55,7 @@ ranges[3,] <- c(1,10)
 init <- uniform_initialize(ranges, 4)
 
 stan_mod <- rstan::stan_model(file = "lincs_birth_logistic.stan")
-fit_data <- rstan::sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init, iter=3000)
+fit_data <- rstan::sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init, iter=2000)
 
 samples = data.frame(extract(fit_data))
 
@@ -67,7 +67,7 @@ gcurves = cbind(reshape::melt(data.frame(sample_growth_curves)),dose = seq(min(s
 
 save(samples, small_data, file=sprintf("lincs-data/inference/%s_%s.rda",cell_name, drug))
 png(sprintf("lincs-data/inference/%s_%s.png",cell_name, drug))
-plt <- ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.03, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
+plt <- ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.05, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 print(plt)
 dev.off()
 
