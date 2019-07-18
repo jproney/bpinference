@@ -10,6 +10,24 @@
 #' @export
 create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
 {
+  if(is.null(attr(model, "class")) ||  attr(model, "class") != "bp_model"){
+    stop("model must be a bp_model object!")
+  }
+  if(!is.numeric(final_pop) || !is.numeric(init_pop) || !is.numeric(times)){
+    stop("times, final populations, and inital populations must be numeric!")
+  }
+  if(is.vector(final_pop)){
+    warning("final_pop is a vector. Converting to 1-column matrix")
+    final_pop <- matrix(final_pop, ncol=1)
+  }
+  if(is.vector(init_pop)){
+    warning("final_pop is a vector. Converting to 1-column matrix")
+    init_pop <- matrix(init_pop, ncol=1)
+  }
+  if(nrow(init_pop) != nrow(final_pop) || nrow(init_pop) != length(times)){
+    stop("dimensions of initial population, final population, and times do not match!")
+  }
+    
   nevents <- nrow(model$e_mat)  #number of events
   ntypes <- ncol(model$e_mat)  #number of types
   ndatapts <- nrow(final_pop)  #number of datapoints
@@ -18,12 +36,16 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
   times_idx <- match(times, times_unique)  #index of time duration for each datapoint
   nparams <- model$nparams  #total number of parameters
   
-  if (model$ndep > 0 && (is.na(c_mat) || ncol(c_mat) < model$ndep))
+  if (model$ndep > 0 && (is.na(c_mat) || ncol(c_mat) != model$ndep))
   {
-    stop("c_mat does not contain enough dependent variables for the model")
+    stop("c_mat contains in correct number of dependent variables for model!")
   }
   if (model$ndep == 0 && is.na(c_mat))
   {
+    if(nrow(c_mat) != length(times)){
+      stop("dimensions of initial population, final population, times, and c_mat do not match!")
+
+    }
     c_mat_unique <- matrix(0, 1, 1)
     ndep_levels <- 1
     ndep <- 1
