@@ -49,7 +49,7 @@ options(mc.cores = parallel::detectCores())
 
 ranges <- matrix(rep(c(0,1), mod$nparams),ncol=2,byrow = T)
 ranges[4,] <- c(-2,2)
-ranges[3,] <- c(0,10)
+ranges[3,] <- c(0,5)
 init <- uniform_initialize(ranges, 4)
 
 if(file.exists("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")){
@@ -59,7 +59,7 @@ if(file.exists("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_lo
   saveRDS(stan_mod, "/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")
 }
 
-fit_data <- rstan::sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init, iter=3000)
+fit_data <- rstan::sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95, max_treedepth = 20), chains = 4, refresh = 1, init =init, iter=3000)
 
 samples = data.frame(extract(fit_data))
 
@@ -69,8 +69,8 @@ compute_growth_curve =
 sample_growth_curves = apply(samples[1:800,], 1, compute_growth_curve, seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000)) 
 gcurves = cbind(reshape::melt(data.frame(sample_growth_curves)),dose = seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000))
 
-save(samples, small_data, file=sprintf("lincs-data/inference/%s_%s.rda",cell_name, drug))
+save(fit_data, small_data, file=sprintf("lincs-data/inference/%s_%s.rda",cell_name, drug))
 
 
-warns = sprintf("%s_%s Div: %d Treedepth: %s Rhat: %s\n", cell_name, drug, check_div(fit_data), check_exceeded_treedepth(fit_data), check_rhat(fit_data))
+warns = sprintf("%s_%s Div: %d Treedepth: %s Rhat: %s\n", cell_name, drug, check_div(fit_data), check_exceeded_treedepth(fit_data, max_depth = 20), check_rhat(fit_data))
 cat(warns, file="lincs-data/inference/warnings.txt",append = TRUE)
