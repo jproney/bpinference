@@ -48,7 +48,7 @@ generate(mod, priors, "lincs_birth_logistic.stan")
 options(mc.cores = parallel::detectCores())
 
 ranges <- matrix(rep(c(0,1), mod$nparams),ncol=2,byrow = T)
-ranges[4,] <- c(-2,2)
+ranges[4,] <- c(gr_midpoint-1,gr_midpoint+1)
 ranges[3,] <- c(0,5)
 init <- uniform_initialize(ranges, 4)
 
