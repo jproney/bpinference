@@ -52,6 +52,7 @@ priors[[3]] <- prior_dist(name="uniform",params=c(1,10), bounds=c(1,10))
 priors[[4]] <- prior_dist(name="normal",params=c(gr_midpoint,1), bounds=c(-6,6))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 
+init = rep(list(list(Theta4 = gr_midpoint)),4)
 
 model_str = generate(mod, priors) #regenerate every time
 
