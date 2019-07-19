@@ -60,7 +60,7 @@ options(mc.cores = parallel::detectCores())
 
 stan_mod <- rstan::stan_model(model_code = model_str)
 
-fit_data <- rstan::sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95, max_treedepth = 20), chains = 4, refresh = 1, iter=3000)
+fit_data <- rstan::sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95, max_treedepth = 20), chains = 4, refresh = 1, iter=3000, init = init)
 
 samples = data.frame(extract(fit_data))
 
