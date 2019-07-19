@@ -47,10 +47,7 @@ generate(mod, priors, "lincs_birth_logistic.stan")
 
 options(mc.cores = parallel::detectCores())
 
-ranges <- matrix(rep(c(0,5), mod$nparams),ncol=2,byrow = T)
-ranges[4,] <- c(gr_midpoint-1,gr_midpoint+1)
-ranges[3,] <- c(0,10)
-init <- uniform_initialize(ranges, 4)
+init = list(rep(list(Theta4 = gr_midpoint),4))
 
 if(file.exists("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")){
   stan_mod <- readRDS("/michorlab/jroney/bpinference/lincs-data/compiled/lincs_birth_logistic.RDS")
