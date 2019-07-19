@@ -54,13 +54,15 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
 #' @export
 uniform_initialize <- function(ranges, nchains)
 {
-  init_list <- replicate(nchains, list(apply(ranges, 1, function(s)
-  {
-    runif(1, s[1], s[2])
-  })))
+  init_list <- list()
   names_list <- sapply(1:nrow(ranges), function(i){sprintf("Theta%d", i)})
-  for(i in 1:length(init_list)){
-    names(init_list[[i]]) <- names_list
+  for(i in 1:nrow(ranges)){
+    init_list[[i]] <- as.list(apply(ranges, 1, function(s)
+    {
+      runif(1, s[1], s[2])
+    }))
+    names(init_list[[i]]) <- names_list 
+    print(init_list)
   }
   return(init_list)
 }
