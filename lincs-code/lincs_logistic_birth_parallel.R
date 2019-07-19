@@ -25,7 +25,7 @@ prepare_data <- function(cellname, drug){
 }
 
 small_data = prepare_data(cell_name, drug)
-bin_means = dplyr::summarise(dplyr::group_by(small_data, drug_conc), Mean = mean(final_pop))
+bin_means = dplyr::summarise(dplyr::group_by(small_data, drug_conc), Mean = mean(log(final_pop/init_pop)/3))
 gr_drop = (bin_means$Mean - dplyr::lag(bin_means$Mean))[-1]
 drop_idx = which.min(gr_drop)+1
 gr_midpoint = bin_means[drop_idx,]$drug_conc #empirical prior
