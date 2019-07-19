@@ -103,13 +103,15 @@ stan_data_from_simulation <- function(sim_data, model)
 #' @param priors A list of prior distributions for each parameters in the mode. 
 #' Each entry in the list should be a names list of the form list(name="normal",params=c(0,1),bounds=(-100,100))
 #' @param filename The name of the file in which to store the model. Should end in ".stan"
+#' 
+#' @return a string containing the model code
 #' @export
-generate <- function(model, priors, filename)
+generate <- function(model, priors, filename = NA)
 {
   if(is.null(attr(model, "class")) ||  attr(model, "class") != "bp_model"){
     stop("model must be a bp_model object!")
   }
-  if(!is.vector(filename) || !is.character(filename)){
+  if(!is.na(filename) && (!is.vector(filename) || !is.character(filename))){
     stop("filename should be a character vector!")
   }
   nfunc <- length(model$func_deps)
@@ -137,8 +139,12 @@ generate <- function(model, priors, filename)
     priorStrs[p] <- parse[1]
     declStrs[p] <- parse[2]
   }
-  write(sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
-                                                                collapse = ""), paste(priorStrs, collapse = "")), filename)
+  model_str = sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
+                                                                collapse = ""), paste(priorStrs, collapse = ""))
+  if(!is.na(filename)){
+    write(model_str, filename)
+  }
+  return(model_str)
 }
 
 #' takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
