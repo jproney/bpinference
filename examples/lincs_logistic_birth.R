@@ -30,15 +30,15 @@ prepare_data <- function(cellname, drug){
   return(new_data)
 }
 
-cell_name = "BT-20"
-drug = "NVP-AEW541"
+cell_name = "MCF7"
+drug = "Seliciclib"
 small_data = prepare_data(cell_name, drug)
 gr = log(small_data$final_pop/small_data$init_pop)/3
 gr_range = mean(gr[1:3]) - mean(tail(gr,3)) #empirical prior mean
 
 ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 
-stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_pop = matrix(small_data$init_pop), c_mat = matrix(small_data$drug_conc), times = small_data$times)
+stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_pop = matrix(small_data$init_pop), c_mat = matrix(small_data$drug_conc), times = small_data$times, simple_bd = T)
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .25), bounds = c(0,5))
@@ -46,7 +46,7 @@ priors[[3]] <- prior_dist(name="normal",params=c(0,2), bounds=c(0,10))
 priors[[4]] <- prior_dist(name="normal",params=c(0,2), bounds=c(-5,5))
 priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 
-generate(mod, priors, "lincs_birth_logistic.stan")
+generate(mod, priors, "lincs_birth_logistic.stan", simple_bd = T)
 
 options(mc.cores = parallel::detectCores())
 
@@ -66,12 +66,4 @@ compute_growth_curve =
 sample_growth_curves = apply(samples[1:800,], 1, compute_growth_curve, seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000)) 
 gcurves = cbind(reshape::melt(data.frame(sample_growth_curves)),dose = seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000))
 
-save(samples, small_data, file=sprintf("lincs-data/inference/%s_%s.rda",cell_name, drug))
-png(sprintf("lincs-data/inference/%s_%s.png",cell_name, drug))
-plt <- ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.05, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
-print(plt)
-dev.off()
-
-
-warns = sprintf("%s_%s Div: %d Treedepth: %s Rhat: %s\n", cell_name, drug, check_div(fit_data), check_exceeded_treedepth(fit_data), check_rhat(fit_data))
-cat(warns, file="lincs-data/inference/warnings.txt",append = TRUE)
+ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.05, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))

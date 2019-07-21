@@ -5,6 +5,7 @@
 #' @param init_pop = population at beginning of each run.  Dimensions ndatapts x ntypes 
 #' @param times = the length of time elapsing between each initial population and each final population. dimensions ndatapts x 1 
 #' @param c_mat = matrix of dependent variables that vary from run to run. Dimensions ndatapts x ndep 
+#' @param simple_bd = logical value indicating whether or not the model is a simple birth-death process. If TRUE, a simpler data list will be returned
 #'
 #' @return A data list to pass to the Stan sampling function 
 #' @export
@@ -75,6 +76,7 @@ uniform_initialize <- function(ranges, nchains)
 #' Helper function for piping simulation output into inference engine
 #' @param sim_data simulation data as returned from \code{bpsims}
 #' @param model the \code{bpmodel} object the produced the data
+#' @param simple_bd = logical value indicating whether or not the model is a simple birth-death process. If TRUE, a simpler data list will be returned
 #' 
 #' @return A data list to pass to the Stan sampling function 
 #' @export
