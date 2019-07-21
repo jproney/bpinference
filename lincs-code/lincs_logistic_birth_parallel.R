@@ -5,7 +5,7 @@ cell_name = args[1]
 drug = args[2]
 
 delete_cols = c("Timepoint.Unit","Small.Mol.Conc.Unit","LJP.Library.Plate","Assay.Well","Normalized.Growth.Rate.Inhibition.Value","Cell.HMS.LINCS.ID","Small.Molecule.HMS.LINCS.ID","Relative.Cell.Count")
-lincs_data = read.csv("LINCS-data/processed/dataset_20245-47.csv")
+lincs_data = read.csv("lincs-data/dataset_20245-47.csv")
 lincs_data = lincs_data[,!names(lincs_data)%in%delete_cols]
 
 e_mat <-  matrix(c(2,0),ncol=1)
@@ -37,19 +37,7 @@ gr_range = max(bin_means[1,]$Mean - bin_means[nrow(bin_means),]$Mean,0.01) #empi
 #ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 
 
-#Theta1 ~ normal(0,0.25);
-#Theta2 ~ normal(0.629613491882936,0.5);
-#Theta3 ~ uniform(1,10);
-#Theta4 ~ uniform(-3,3);
-#Theta5 ~ normal(0,0.25);
-
-#real<lower=0, upper=5> Theta1;
-#real<lower=0, upper=5> Theta2;
-#real<lower=1, upper=10> Theta3;
-#real<lower=-3, upper=3> Theta4;
-#real<lower=0, upper=5> Theta5;
-
-stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_pop = matrix(small_data$init_pop), c_mat = matrix(small_data$drug_conc), times = small_data$times)
+stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_pop = matrix(small_data$init_pop), c_mat = matrix(small_data$drug_conc), times = small_data$times, simple_bd = T)
 priors = list()
 priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 priors[[2]] <- prior_dist(name="normal", params = c(gr_range, .5), bounds = c(0,5))
@@ -59,7 +47,7 @@ priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
 
 init = rep(list(list(Theta4 = gr_midpoint)),4)
 
-model_str = generate(mod, priors) #regenerate every time
+model_str = generate(mod, priors, simple_bd = T) #regenerate every time
 
 options(mc.cores = parallel::detectCores())
 
