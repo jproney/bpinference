@@ -7,15 +7,15 @@ times <- seq(0,tf)
 func_deps <- c('c[1]','c[2]')
 priors <- rep(list(list(name="uniform",params=c(0, 1), bounds=c(0,2))),2)
 
-mod <- bp_model(e_mat, p_vec, func_deps, 2, 0)
+mod <- bp_model_simple_birth_death(func_deps, 2, 0)
 
 simulation_params <- c(0.25, 0.10)
 
 simulation_dat <- bpsims(mod, simulation_params, z0, times, 50)
 
-dat <- stan_data_from_simulation(simulation_dat, mod)
+dat <- stan_data_from_simulation(simulation_dat, mod, simple_bd = T)
 
-generate(mod, priors, "one_type.stan")
+generate(mod, priors, "one_type.stan",simple_bd = T)
 
 options(mc.cores = parallel::detectCores())
 

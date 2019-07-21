@@ -44,7 +44,8 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA, simp
       p_vec = model$p_vec, pop_vec = final_pop, init_pop = init_pop, times = array(times_unique,1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
   }
   else{
-    stan_dat <- list(pop_vec = final_pop, init_pop = init_pop, times = times, function_var = c_mat_unique, var_idx = var_idx)
+    stan_dat <- list(pop_vec = c(final_pop), init_pop = c(init_pop), times = times, function_var = c_mat_unique, var_idx = var_idx, 
+                     ndep_levels = ndep_levels, ndep = ndep, nparams = nparams,ndatapts = ndatapts)
   }
   
   return(stan_dat)
@@ -77,7 +78,7 @@ uniform_initialize <- function(ranges, nchains)
 #' 
 #' @return A data list to pass to the Stan sampling function 
 #' @export
-stan_data_from_simulation <- function(sim_data, model)
+stan_data_from_simulation <- function(sim_data, model, simple_bd = FALSE)
 {
   ntypes <- ncol(model$e_mat)
   offset <- model$ndep + (model$ndep > 0)
@@ -97,9 +98,9 @@ stan_data_from_simulation <- function(sim_data, model)
   if (model$ndep > 0)
   {
     return(create_stan_data(model, final_pop, init_pop, times, matrix(sim_data[, 
-                                                                        4:(3 + model$ndep)], ncol = model$ndep)))
+                                                                        4:(3 + model$ndep)], ncol = model$ndep), simple_bd = simple_bd))
   }
-  return(create_stan_data(model, final_pop, init_pop, times))
+  return(create_stan_data(model, final_pop, init_pop, times, simple_bd = simple_bd))
 }
 
 #' Generate a Stan file for inferring the model parameters
@@ -134,7 +135,11 @@ generate <- function(model, priors, filename = NA, simple_bd = FALSE)
     # convert the expression
     exprn <- model$func_deps[[i]]
     stanstr <- exp_to_stan(exprn, model$nparams, model$ndep)
-    funcs[i] <- sprintf("\t\tr_mat[%d, p_vec[%d]] = %s;\n", i, i, stanstr)
+    if(!simple_bd){
+      funcs[i] <- sprintf("\t\tr_mat[%d, p_vec[%d]] = %s;\n", i, i, stanstr)
+    }else{
+      funcs[i] <- sprintf("\t\tr_mat[%d, i] = %s;\n", i, stanstr)
+    }
   }
 
   for (p in 1:nprior)
@@ -144,7 +149,7 @@ generate <- function(model, priors, filename = NA, simple_bd = FALSE)
     declStrs[p] <- parse[2]
   }
   if(simple_bd){
-    if(!all(model$e_mat == matrix(c(2,0),nol=1))){
+    if(!all(model$e_mat == matrix(c(2,0),ncol=1))){
       stop("model is not a simple birth-death process!")
     }
     model_str = sprintf(STAN_TEMPLATE_SIMPLE_BD, paste(declStrs, collapse = ""), paste(funcs, 
