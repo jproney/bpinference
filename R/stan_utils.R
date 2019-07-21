@@ -8,7 +8,7 @@
 #'
 #' @return A data list to pass to the Stan sampling function 
 #' @export
-create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
+create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA, simple_bd = FALSE)
 {
   nevents <- nrow(model$e_mat)  #number of events
   ntypes <- ncol(model$e_mat)  #number of types
@@ -39,10 +39,14 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
     })  #indices of unique dependent variable combinations
   }
   
+  if(!simple_bd){
+    stan_dat <- list(ntypes = ntypes, nevents = nevents, ndatapts = ndatapts, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, e_mat = model$e_mat, 
+      p_vec = model$p_vec, pop_vec = final_pop, init_pop = init_pop, times = array(times_unique,1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
+  }
+  else{
+    stan_dat <- list(pop_vec = final_pop, init_pop = init_pop, times = times, function_var = c_mat_unique, var_idx = var_idx)
+  }
   
-  stan_dat <- list(ntypes = ntypes, nevents = nevents, ndatapts = ndatapts, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, e_mat = model$e_mat, 
-                   p_vec = model$p_vec, pop_vec = final_pop, init_pop = init_pop, times = array(times_unique, 
-                                                                                  1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
   return(stan_dat)
 }
 
@@ -106,7 +110,7 @@ stan_data_from_simulation <- function(sim_data, model)
 #' 
 #' @return a string containing the model code
 #' @export
-generate <- function(model, priors, filename = NA)
+generate <- function(model, priors, filename = NA, simple_bd = FALSE)
 {
   if(is.null(attr(model, "class")) ||  attr(model, "class") != "bp_model"){
     stop("model must be a bp_model object!")
@@ -139,8 +143,17 @@ generate <- function(model, priors, filename = NA)
     priorStrs[p] <- parse[1]
     declStrs[p] <- parse[2]
   }
-  model_str = sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
+  if(simple_bd){
+    if(!all(model$e_mat == matrix(c(2,0),nol=1))){
+      stop("model is not a simple birth-death process!")
+    }
+    model_str = sprintf(STAN_TEMPLATE_SIMPLE_BD, paste(declStrs, collapse = ""), paste(funcs, 
+                                                                             collapse = ""), paste(priorStrs, collapse = ""))
+  }
+  else{
+    model_str = sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
                                                                 collapse = ""), paste(priorStrs, collapse = ""))
+  }
   if(!is.na(filename)){
     write(model_str, filename)
   }
