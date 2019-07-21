@@ -16,9 +16,9 @@ c_mat <- matrix(c(0.0,0.2,0.4,0.6,0.8,1.0), ncol=1)
 
 simulation_data <- bpsims(mod, simulation_params, z0, times, rep(20,6), c_mat)
 
-dat <- stan_data_from_simulation(simulation_data, mod)
+dat <- stan_data_from_simulation(simulation_data, mod, simple_bd = T)
 
-generate(mod, priors, "one_type_logistic_birth.R")
+generate(mod, priors, "one_type_logistic_birth.stan", simple_bd = T)
 
 options(mc.cores = parallel::detectCores())
 
@@ -26,6 +26,6 @@ ranges <- matrix(rep(c(0,1), length(simulation_params)),ncol=2,byrow = T)
 ranges[3,] <- c(5,15)
 init <- uniform_initialize(ranges, 4)
 
-stan_mod <- rstan::stan_model(file = "one_type_logistic_birth.R")
+stan_mod <- rstan::stan_model(file = "one_type_logistic_birth.stan")
 fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
-file.remove("one_type_logistic_birth.R")
+file.remove("one_type_logistic_birth.stan")
