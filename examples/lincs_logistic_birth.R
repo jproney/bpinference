@@ -1,8 +1,9 @@
 delete_cols = c("Timepoint.Unit","Small.Mol.Conc.Unit","LJP.Library.Plate","Assay.Well","Normalized.Growth.Rate.Inhibition.Value","Cell.HMS.LINCS.ID","Small.Molecule.HMS.LINCS.ID","Relative.Cell.Count")
-lincs_data = read.csv("lincs-data/dataset_20245_20181218181013.csv")
+lincs_data = read.csv("LINCS-data/processed/dataset_20245-47.csv")
 lincs_data = lincs_data[,!names(lincs_data)%in%delete_cols]
 
-cell_lines = c("MCF7","SK-BR-3","MDA-MB-231 BT-20","Hs 578T","MCF 10A")
+cell_lines = c("MCF7","SK-BR-3","MDA-MB-231","BT-20","Hs 578T","MCF 10A")
+cell_lines_no_space = c("MCF7","SK-BR-3","MDA-MB-231","BT-20","Hs-578T","MCF-10A")
 drugs =   c('Seliciclib','AT-7519','AZD7762','AZD8055','Sorafenib','CP466722','CP724714','Alvocidib','GW843682X','HG-5-113-01','HG-5-88-01','HG-6-64-01','Neratinib','JW-7-24-1',
             'Dasatinib','Tozasertib','Imatinib','NVP-TAE684','CGP60474','PD173074','Crizotinib','BMS345541','KIN001-043','Saracatinib','Sigma A6730','WH-4-025','R406','BI-2536',
             'A443654','SB590885','Pictilisib','PD184352','PLX-4720','Lapatinib','Sirolimus','ZSTK474','BX-912','Selumetinib','MK2206','AZD-6482','NU7441','OSI-027','WYE-125132',

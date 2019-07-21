@@ -5,7 +5,7 @@ cell_name = args[1]
 drug = args[2]
 
 delete_cols = c("Timepoint.Unit","Small.Mol.Conc.Unit","LJP.Library.Plate","Assay.Well","Normalized.Growth.Rate.Inhibition.Value","Cell.HMS.LINCS.ID","Small.Molecule.HMS.LINCS.ID","Relative.Cell.Count")
-lincs_data = read.csv("lincs-data/dataset_20245_20181218181013.csv")
+lincs_data = read.csv("LINCS-data/processed/dataset_20245-47.csv")
 lincs_data = lincs_data[,!names(lincs_data)%in%delete_cols]
 
 e_mat <-  matrix(c(2,0),ncol=1)
@@ -15,15 +15,17 @@ mod <- bp_model(e_mat, p_vec, func_deps, 5, 1)
 
 prepare_data <- function(cellname, drug){ 
   small_data = dplyr::filter(lincs_data, Cell.Name == cellname, Small.Molecule.Name == drug)
-  controls = small_data$Total.Control.Cell.Count[1:max(small_data$Replicate)];
-  c_mat = log(c(rep(0.001, length(controls)), small_data$Small.Mol.Concentration))
-  final_pop = c(controls, small_data$Total.Cell.Count.After.Treatment)
-  times = c(rep( small_data$Timepoint[1], length(controls)), small_data$Timepoint)/24
-  init_pop = c(rep(small_data$Total.Cell.Count.Before.Treatment[1], length(controls)), small_data$Total.Cell.Count.Before.Treatment)
+  controls = dplyr::filter(lincs_data, Cell.Name == cellname, Small.Molecule.Name == "Control")  
+  c_mat = log(c(rep(0.0001, nrow(controls)), small_data$Small.Mol.Concentration))
+  final_pop = c(controls$Total.Cell.Count.After.Treatment, small_data$Total.Cell.Count.After.Treatment)
+  times = c(controls$Timepoint, small_data$Timepoint)/24
+  init_pop = c(controls$Total.Cell.Count.Before.Treatment, small_data$Total.Cell.Count.Before.Treatment)
   new_data = data.frame(cbind(drug_conc = c_mat, final_pop = final_pop, times = times, init_pop = init_pop))
   return(new_data)
 }
 
+#cell_name = "MCF-10A"
+#drug = "Geldanamycin"
 small_data = prepare_data(cell_name, drug)
 bin_means = dplyr::summarise(dplyr::group_by(small_data, drug_conc), Mean = mean(log(final_pop/init_pop)/3))
 gr_drop = (bin_means$Mean - dplyr::lag(bin_means$Mean))[-1]
@@ -31,6 +33,9 @@ drop_idx = which.min(gr_drop)+1
 gr_midpoint = bin_means[drop_idx,]$drug_conc #empirical prior
 
 gr_range = max(bin_means[1,]$Mean - bin_means[nrow(bin_means),]$Mean,0.01) #empirical prior
+
+#ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
+
 
 #Theta1 ~ normal(0,0.25);
 #Theta2 ~ normal(0.629613491882936,0.5);

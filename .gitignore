@@ -11,4 +11,5 @@ stanfiles/
 inst/doc
 *.tex
 lincs-data/
+LINCS-data/
 slurm*
