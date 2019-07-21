@@ -73,4 +73,17 @@ test_that("generated models match known reference models", {
   
   file.remove("test_gen.stan")
   
+  e_mat <-  matrix(c(2,0),ncol=1)
+  p_vec <- c(1, 1)
+  func_deps <- c('c[1] + c[2]/(1 + exp(c[3]*(x[1] - c[4])))','c[5]') #logistic function
+  mod <- bp_model(e_mat, p_vec, func_deps, 5, 1)
+  priors = list()
+  priors[[1]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
+  priors[[2]] <- prior_dist(name="normal", params = c(.25, .25), bounds = c(0,5))
+  priors[[3]] <- prior_dist(name="normal",params=c(0,2), bounds=c(0,10))
+  priors[[4]] <- prior_dist(name="normal",params=c(0,2), bounds=c(-5,5))
+  priors[[5]] <- prior_dist(name="normal", params = c(0, .25), bounds = c(0,5))
+  out = generate(mod, priors, simple_bd = T)
+  expect_equal(out, REFERENCE_MODEL_6)
+  
 })
