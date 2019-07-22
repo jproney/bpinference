@@ -24,8 +24,8 @@ prepare_data <- function(cellname, drug){
   return(new_data)
 }
 
-#cell_name = "MCF-10A"
-#drug = "Geldanamycin"
+cell_name = "MCF-10A"
+drug = "Geldanamycin"
 small_data = prepare_data(cell_name, drug)
 bin_means = dplyr::summarise(dplyr::group_by(small_data, drug_conc), Mean = mean(log(final_pop/init_pop)/3))
 gr_drop = (bin_means$Mean - dplyr::lag(bin_means$Mean))[-1]
@@ -34,7 +34,7 @@ gr_midpoint = bin_means[drop_idx,]$drug_conc #empirical prior
 
 gr_range = max(bin_means[1,]$Mean - bin_means[nrow(bin_means),]$Mean,0.01) #empirical prior
 
-#ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
+ggplot() + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
 
 
 stan_dat = create_stan_data(mod, final_pop = matrix(small_data$final_pop), init_pop = matrix(small_data$init_pop), c_mat = matrix(small_data$drug_conc), times = small_data$times, simple_bd = T)
