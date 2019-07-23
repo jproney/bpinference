@@ -5,7 +5,8 @@ Authors@R: person("James", "Roney", email = "jamesroney@college.harvard.edu", ro
 Description: What the package does (one paragraph).
 Depends: 
     R (>= 3.5.2),
-    rstan
+    rstan,
+    dplyr
 License: MIT
 Encoding: UTF-8
 LazyData: true
@@ -16,7 +17,6 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Imports: 
-    dplyr,
     stringr,
     reshape,
     ggplot2

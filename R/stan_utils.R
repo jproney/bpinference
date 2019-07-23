@@ -19,7 +19,7 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA, simp
   if (is.vector(init_pop))
   {
     warning("init_pop is a vector, not a matrix. Converting to a one-column matrix")
-    final_pop <- matrix(init_pop, ncol = 1)
+    init_pop <- matrix(init_pop, ncol = 1)
   }
   if(nrow(final_pop) != nrow(init_pop) || nrow(init_pop) != length(times)){
     stop("times, initial populations, and final populations must all have same number of rows!")

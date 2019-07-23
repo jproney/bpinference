@@ -19,7 +19,7 @@ options(mc.cores = parallel::detectCores())
 ranges <- matrix(rep(c(0,1),nparam),nparam,2,byrow = T)
 init <- uniform_initialize(ranges, 4)
 
-dat <- create_stan_data(mod, matrix(controls$CellCountAfterTreatment, ncol=1), matrix(controls$PrevCellCount,ncol=1), controls$DeltaT, simple_bd = T)
+dat <- create_stan_data(mod, controls$CellCountAfterTreatment, controls$PrevCellCount, controls$DeltaT, simple_bd = T)
 
 stan_mod <- rstan::stan_model(file = "lincs_ts.stan")
 fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, iter = 3000, warmup = 1000)
