@@ -1,14 +1,14 @@
 e_mat <-  matrix(c(2,0),ncol=1)
 p_vec <- c(1, 1)
 z0 <- c(1000) # initial population vector
-times <- seq(1,3)
+times <- seq(1,20)
 
 func_deps <- c('c[1]','c[2]')
 priors <- rep(list(list(name="uniform",params=c(0, 1), bounds=c(0,2))),2)
 
 mod <- bp_model_simple_birth_death(func_deps, 2, 0)
 
-simulation_params <- c(0.25, 0.10)
+simulation_params <- c(0.15, 0.0)
 
 simulation_dat <- bpsims(mod, simulation_params, z0, times, 25)
 
