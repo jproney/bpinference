@@ -11,6 +11,19 @@
 #' @export
 create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA, simple_bd = FALSE)
 {
+  if (is.vector(final_pop))
+  {
+    warning("final_pop is a vector, not a matrix. Converting to a one-column matrix")
+    final_pop <- matrix(final_pop, ncol = 1)
+  }
+  if (is.vector(init_pop))
+  {
+    warning("init_pop is a vector, not a matrix. Converting to a one-column matrix")
+    final_pop <- matrix(init_pop, ncol = 1)
+  }
+  if(nrow(final_pop) != nrow(init_pop) || nrow(init_pop) != length(times)){
+    stop("times, initial populations, and final populations must all have same number of rows!")
+  }
   nevents <- nrow(model$e_mat)  #number of events
   ntypes <- ncol(model$e_mat)  #number of types
   ndatapts <- nrow(final_pop)  #number of datapoints

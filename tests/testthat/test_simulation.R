@@ -148,5 +148,5 @@ test_that("Simulation data is converted to stan input without error",{
   expect_equal(dat$times[1], 3)
   
   times = c(4)
-  simulation_dat = bpsims(mod, simulation_params, z0, times, reps, c_mat)
+  expect_silent(bpsims(mod, simulation_params, z0, times, reps, c_mat))
 })
