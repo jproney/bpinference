@@ -140,4 +140,10 @@ test_that("Simulation data is converted to stan input without error",{
   c_mat = matrix(c(0.0,0.2,0.4,0.6,0.8,1.0), ncol=1)
   simulation_dat = bpsims(mod, simulation_params, z0, times, reps, c_mat)
   expect_silent(stan_data_from_simulation(simulation_dat, mod))
+  
+  times = seq(1,15,3)
+  simulation_dat = bpsims(mod, simulation_params, z0, times, reps, c_mat)
+  dat = stan_data_from_simulation(simulation_dat, mod)
+  expect_equal(length(dat$times), 1)
+  expect_equal(dat$times[1], 3)
 })
