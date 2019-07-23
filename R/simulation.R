@@ -114,7 +114,7 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
         r_vec[j] <- eval(model$func_deps[[j]], envir = list(c = theta, 
                                                         x = c_mat[i, ]))
       }
-      x <- replicate(reps[i], bp(model$e_mat, r_vec, model$p_vec, z0_vec, times))
+      x <- array(replicate(reps[i], bp(model$e_mat, r_vec, model$p_vec, z0_vec, times)),c(length(times),length(z0_vec), reps[i]))
       for (k in 1:reps[i])
       {
 
