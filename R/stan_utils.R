@@ -89,17 +89,18 @@ stan_data_from_simulation <- function(sim_data, model, simple_bd = FALSE)
     cellname <- sprintf("t%d_cells", i)
     names(sim_data)[2 + offset + i] <- cellname
     prevname <- paste(cellname, "prev", sep = "_")
-    sim_data <- dplyr::mutate(sim_data, prev = dplyr::lag(sim_data[, cellname]))
+    sim_data <- dplyr::group_by(sim_data, rep)
+    sim_data <- dplyr::mutate(sim_data, prev = dplyr::lag(!!sym(cellname)))
     names(sim_data)[2 + offset + ntypes + i] <- prevname
   }
   sim_data <- dplyr::mutate(sim_data,  dtimes = times - dplyr::lag(times))
-  sim_data <- dplyr::filter(sim_data,  times != 0)
+  sim_data <- dplyr::filter(sim_data,  !is.na(t1_cells_prev))
   init_pop <- as.matrix(sim_data[, (3 + offset + ntypes):(2 + offset + 2 * ntypes)])
   final_pop <- as.matrix(sim_data[, (3 + offset):(2 + offset + ntypes)])
   times <- sim_data$dtimes
   if (model$ndep > 0)
   {
-    return(create_stan_data(model, final_pop, init_pop, times, matrix(sim_data[, 
+    return(create_stan_data(model, final_pop, init_pop, times, as.matrix(sim_data[, 
                                                                         4:(3 + model$ndep)], ncol = model$ndep), simple_bd = simple_bd))
   }
   return(create_stan_data(model, final_pop, init_pop, times, simple_bd = simple_bd))
