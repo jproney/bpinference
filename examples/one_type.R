@@ -8,7 +8,7 @@ priors <- rep(list(list(name="uniform",params=c(0, 1), bounds=c(0,2))),2)
 
 mod <- bp_model_simple_birth_death(func_deps, 2, 0)
 
-simulation_params <- c(0.15, 0.0)
+simulation_params <- c(0.25, 0.1)
 
 simulation_dat <- bpsims(mod, simulation_params, z0, times, 25)
 
