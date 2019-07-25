@@ -8,22 +8,22 @@ drugs =   c('Seliciclib','AT-7519','AZD7762','AZD8055','Sorafenib','CP466722','C
             'Omipalisib','Buparlisib','XL147','Y39983','Nintedanib','Foretinib','AZD 5438','Pelitinib','Luminespib','AZD8330','TGX221','GSK1059615','Brivanib','CHIR-99021','Linifanib',
             'PIK-93','Dactolisib','Alpelisib','GDC-0980','Mitoxantrone','Radicicol','Withaferin A')
 
-cell_line = "MCF7"
-drug = "Radicicol"
+cell_line = "BT-20"
+drug = "NVP-AEW541"
 
-command = sprintf("scp jamesr@kraken.dfci.harvard.edu:/michorlab/jroney/bpinference/lincs-data/inference/%s_%s.rda %s_%s.rda", cell_line, drug, cell_line, drug)
+command = sprintf("scp jamesr@kraken.dfci.harvard.edu:/michorlab/jroney/bpinference/lincs-data/best_inference/%s_%s.rda %s_%s.rda", cell_line, drug, cell_line, drug)
 system(command, wait = TRUE)
 
 load(sprintf("%s_%s.rda", cell_line, drug))
 #samples = data.frame(extract(fit_data))
-samples = extract(fit_data, permute=F)
+samples = data.frame(extract(fit_data))
 compute_growth_curve = 
   function(params, doses){sapply(doses, function(x){params[1] + params[2]/(1 + exp(params[3]*(x - params[4]))) - params[5]})}
 
-sample_growth_curves = apply(samples[1:800,1,], 1, compute_growth_curve, seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000)) 
+sample_growth_curves = apply(samples[1:800,], 1, compute_growth_curve, seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000)) 
 gcurves = cbind(reshape::melt(data.frame(sample_growth_curves)),dose = seq(min(small_data$drug_conc),max(small_data$drug_conc),length.out = 1000))
 
-ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.03, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times))
+ggplot() + geom_line(data=gcurves, aes(x=dose, y=value, group = factor(variable)),alpha=.03, color="red") + geom_point(data=small_data, aes(x = drug_conc, y = log(final_pop/init_pop)/times)) + xlab("log(dose)") + ylab("growth rate") + ggtitle(sprintf("LINCS: %s %s", cell_line, drug))
 
 bin_means = dplyr::summarise(dplyr::group_by(small_data, drug_conc), Mean = mean(final_pop))
 gr_drop = (bin_means$Mean - dplyr::lag(bin_means$Mean))[-1]
