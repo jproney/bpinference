@@ -1,7 +1,7 @@
 #args <- commandArgs(trailingOnly = TRUE)
 devtools::load_all()
 detect_p = as.numeric(args[1])
-detect_p = .9
+detect_p = .8
 
 e_mat <-  rbind(c(2,0),c(0,1),c(0,0))
 p_vec <- c(1, 1, 2)
@@ -31,7 +31,7 @@ generate(mod, priors,"with_apop.stan")
 #  stan_mod <- stan_model(model_code = stan_code)
 #  saveRDS(stan_mod, "/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")
 #}
-stan_mod <- stan_model(file = "with_apop.stan")
+stan_mod <- stan_model(file = "with_apop_nois_model.stan")
 options(mc.cores = parallel::detectCores())
 
 ranges <- matrix(rep(c(0,.2),nrow(e_mat)),nrow(e_mat),2,byrow = T)

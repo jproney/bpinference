@@ -23,5 +23,5 @@ ranges <- matrix(rep(c(0,1),nrow(e_mat)),nrow(e_mat),2,byrow = T)
 init <- uniform_initialize(ranges, 4)
 
 stan_mod <- rstan::stan_model(file = "two_type.stan")
-fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init, iter=3000,warmup=1000)
+fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.8), chains = 4, refresh = 1, init =init, iter=3000,warmup=1000)
 file.remove("two_type.stan")

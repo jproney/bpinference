@@ -75,7 +75,7 @@ uniform_initialize <- function(ranges, nchains)
 {
   init_list <- list()
   names_list <- sapply(1:nrow(ranges), function(i){sprintf("Theta%d", i)})
-  for(i in 1:nrow(ranges)){
+  for(i in 1:nchains){
     init_list[[i]] <- as.list(apply(ranges, 1, function(s)
     {
       runif(1, s[1], s[2])
