@@ -14,14 +14,14 @@ mod <- bp_model_simple_birth_death(func_deps, 2, 0)
 
 simulation_params <- c(0.08, 0.05)
 
-simulation_dat <- bpsims(mod, simulation_params, z0, times, 100)
+simulation_dat <- bpsims(mod, simulation_params, z0, times, 250)
 
 simulation_dat$pop = sapply(simulation_dat$pop, function(x){rbinom(1,x, detect_p)}) #add measurement noise
 
 
 dat <- stan_data_from_simulation(simulation_dat, mod, simple_bd = T)
 
-stan_code = generate(mod, priors, "one_type.stan",simple_bd)
+stan_code = generate(mod, priors, simple_bd=T)
 
 if(file.exists("/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")){
   stan_mod <- readRDS("/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")
