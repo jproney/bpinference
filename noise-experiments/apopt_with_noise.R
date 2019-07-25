@@ -23,7 +23,6 @@ simulation_dat$X2 = sapply(simulation_dat$X2, function(x){rbinom(1,x, detect_p)}
 
 dat <- stan_data_from_simulation(simulation_dat, mod)
 
-generate(mod, priors,"with_apop.stan")
 
 #if(file.exists("/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")){
 #  stan_mod <- readRDS("/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")
@@ -31,10 +30,10 @@ generate(mod, priors,"with_apop.stan")
 #  stan_mod <- stan_model(model_code = stan_code)
 #  saveRDS(stan_mod, "/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")
 #}
-stan_mod <- stan_model(file = "with_apop_nois_model.stan")
+stan_mod <- stan_model(file = "with_apop_noise_model.stan")
 options(mc.cores = parallel::detectCores())
 
-ranges <- matrix(rep(c(0,.2),nrow(e_mat)),nrow(e_mat),2,byrow = T)
+ranges <- matrix(rep(c(0,1),nrow(e_mat)),nrow(e_mat),2,byrow = T)
 init <- uniform_initialize(ranges, 4)
 
 fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, iter = 3000, warmup = 1000, init=init)
