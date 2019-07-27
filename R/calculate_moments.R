@@ -44,6 +44,7 @@ calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   #Diff EQ: m_mat(t) = exp(At)
   a_mat <-  lamb*(b_mat - diag(ntype))
   m_mat <- expm::expm(a_mat*tf)
+  print(a_mat)
   
   c_mat <- array(rep(0,ntype**3), c(ntype, ntype, ntype)); #matrix of second derivatives of offspring PGF
   
@@ -76,6 +77,8 @@ calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   out <- deSolve::ode(y = init_state, times, func = second_moment_de, parms = 0)
   dt_mat <- array(out[nrow(out),-1],c(ntype,ntype*ntype)) #second moment array
   
+  print(m_mat)
+  print(dt_mat)
   mu_mat <- t(m_mat)%*%z0_vec #final mean population matrix
   sigma_mat <- matrix(z0_vec%*%dt_mat,c(ntype,ntype*ntype)) #final population covariance matrix
   

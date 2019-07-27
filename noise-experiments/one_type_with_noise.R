@@ -1,6 +1,7 @@
 args <- commandArgs(trailingOnly = TRUE)
 devtools::load_all()
-detect_p = as.numeric(args[1])
+#detect_p = as.numeric(args[1])
+detect_p = .8
 
 e_mat <-  matrix(c(2,0),ncol=1)
 p_vec <- c(1, 1)
@@ -14,14 +15,14 @@ mod <- bp_model_simple_birth_death(func_deps, 2, 0)
 
 simulation_params <- c(0.08, 0.05)
 
-simulation_dat <- bpsims(mod, simulation_params, z0, times, 250)
+simulation_dat <- bpsims(mod, simulation_params, z0, times, 25)
 
 simulation_dat$pop = sapply(simulation_dat$pop, function(x){rbinom(1,x, detect_p)}) #add measurement noise
 
 
 dat <- stan_data_from_simulation(simulation_dat, mod, simple_bd = T)
 
-stan_code = generate(mod, priors, simple_bd=T)
+stan_code = generate(mod, priors, "one_type_noise.stan", simple_bd=T)
 
 if(file.exists("/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")){
   stan_mod <- readRDS("/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")
@@ -29,6 +30,10 @@ if(file.exists("/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")){
   stan_mod <- stan_model(model_code = stan_code)
   saveRDS(stan_mod, "/michorlab/jroney/compiles/one_type_noise_benchmark.RDS")
 }
+
+
+stan_mod <- stan_model(file = "one_type_noise.stan")
+
 
 options(mc.cores = parallel::detectCores())
 
