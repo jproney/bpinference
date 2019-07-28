@@ -5,11 +5,25 @@
 #' @param init_pop = population at beginning of each run.  Dimensions ndatapts x ntypes 
 #' @param times = the length of time elapsing between each initial population and each final population. dimensions ndatapts x 1 
 #' @param c_mat = matrix of dependent variables that vary from run to run. Dimensions ndatapts x ndep 
+#' @param simple_bd = logical value indicating whether or not the model is a simple birth-death process. If TRUE, a simpler data list will be returned
 #'
 #' @return A data list to pass to the Stan sampling function 
 #' @export
-create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
+create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA, simple_bd = FALSE)
 {
+  if (is.vector(final_pop))
+  {
+    warning("final_pop is a vector, not a matrix. Converting to a one-column matrix")
+    final_pop <- matrix(final_pop, ncol = 1)
+  }
+  if (is.vector(init_pop))
+  {
+    warning("init_pop is a vector, not a matrix. Converting to a one-column matrix")
+    init_pop <- matrix(init_pop, ncol = 1)
+  }
+  if(nrow(final_pop) != nrow(init_pop) || nrow(init_pop) != length(times)){
+    stop("times, initial populations, and final populations must all have same number of rows!")
+  }
   nevents <- nrow(model$e_mat)  #number of events
   ntypes <- ncol(model$e_mat)  #number of types
   ndatapts <- nrow(final_pop)  #number of datapoints
@@ -23,7 +37,7 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
     stop("c_mat does not contain enough dependent variables for the model")
   }
   if (model$ndep == 0 && is.na(c_mat))
-  {
+  { #fill c_mat with dummy data
     c_mat_unique <- matrix(0, 1, 1)
     ndep_levels <- 1
     ndep <- 1
@@ -39,10 +53,15 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
     })  #indices of unique dependent variable combinations
   }
   
+  if(!simple_bd){
+    stan_dat <- list(ntypes = ntypes, nevents = nevents, ndatapts = ndatapts, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, e_mat = model$e_mat, 
+      p_vec = model$p_vec, pop_vec = final_pop, init_pop = init_pop, times = array(times_unique,1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
+  }
+  else{
+    stan_dat <- list(pop_vec = c(final_pop), init_pop = c(init_pop), times = times, function_var = c_mat_unique, var_idx = var_idx, 
+                     ndep_levels = ndep_levels, ndep = ndep, nparams = nparams,ndatapts = ndatapts)
+  }
   
-  stan_dat <- list(ntypes = ntypes, nevents = nevents, ndatapts = ndatapts, ntimes_unique = ntimes_unique, ndep_levels = ndep_levels, ndep = ndep, nparams = nparams, e_mat = model$e_mat, 
-                   p_vec = model$p_vec, pop_vec = final_pop, init_pop = init_pop, times = array(times_unique, 
-                                                                                  1), times_idx = times_idx, function_var = c_mat_unique, var_idx = var_idx)
   return(stan_dat)
 }
 
@@ -54,19 +73,27 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA)
 #' @export
 uniform_initialize <- function(ranges, nchains)
 {
-  return(replicate(nchains, list(list(Theta = apply(ranges, 1, function(s)
-  {
-    runif(1, s[1], s[2])
-  })))))
+  init_list <- list()
+  names_list <- sapply(1:nrow(ranges), function(i){sprintf("Theta%d", i)})
+  for(i in 1:nchains){
+    init_list[[i]] <- as.list(apply(ranges, 1, function(s)
+    {
+      runif(1, s[1], s[2])
+    }))
+    names(init_list[[i]]) <- names_list 
+    print(init_list)
+  }
+  return(init_list)
 }
 
 #' Helper function for piping simulation output into inference engine
 #' @param sim_data simulation data as returned from \code{bpsims}
 #' @param model the \code{bpmodel} object the produced the data
+#' @param simple_bd = logical value indicating whether or not the model is a simple birth-death process. If TRUE, a simpler data list will be returned
 #' 
 #' @return A data list to pass to the Stan sampling function 
 #' @export
-stan_data_from_simulation <- function(sim_data, model)
+stan_data_from_simulation <- function(sim_data, model, simple_bd = FALSE)
 {
   ntypes <- ncol(model$e_mat)
   offset <- model$ndep + (model$ndep > 0)
@@ -75,20 +102,21 @@ stan_data_from_simulation <- function(sim_data, model)
     cellname <- sprintf("t%d_cells", i)
     names(sim_data)[2 + offset + i] <- cellname
     prevname <- paste(cellname, "prev", sep = "_")
-    sim_data <- dplyr::mutate(sim_data, prev = dplyr::lag(sim_data[, cellname]))
+    sim_data <- dplyr::group_by(sim_data, rep)
+    sim_data <- dplyr::mutate(sim_data, prev = dplyr::lag(!!sym(cellname)))
     names(sim_data)[2 + offset + ntypes + i] <- prevname
   }
   sim_data <- dplyr::mutate(sim_data,  dtimes = times - dplyr::lag(times))
-  sim_data <- dplyr::filter(sim_data,  times != 0)
+  sim_data <- dplyr::filter(sim_data,  !is.na(t1_cells_prev))
   init_pop <- as.matrix(sim_data[, (3 + offset + ntypes):(2 + offset + 2 * ntypes)])
   final_pop <- as.matrix(sim_data[, (3 + offset):(2 + offset + ntypes)])
   times <- sim_data$dtimes
   if (model$ndep > 0)
   {
-    return(create_stan_data(model, final_pop, init_pop, times, matrix(sim_data[, 
-                                                                        4:(3 + model$ndep)], ncol = model$ndep)))
+    return(create_stan_data(model, final_pop, init_pop, times, as.matrix(sim_data[, 
+                                                                        4:(3 + model$ndep)], ncol = model$ndep), simple_bd = simple_bd))
   }
-  return(create_stan_data(model, final_pop, init_pop, times))
+  return(create_stan_data(model, final_pop, init_pop, times, simple_bd = simple_bd))
 }
 
 #' Generate a Stan file for inferring the model parameters
@@ -96,13 +124,15 @@ stan_data_from_simulation <- function(sim_data, model)
 #' @param priors A list of prior distributions for each parameters in the mode. 
 #' Each entry in the list should be a names list of the form list(name="normal",params=c(0,1),bounds=(-100,100))
 #' @param filename The name of the file in which to store the model. Should end in ".stan"
+#' 
+#' @return a string containing the model code
 #' @export
-generate <- function(model, priors, filename)
+generate <- function(model, priors, filename = NA, simple_bd = FALSE, noise_model = F)
 {
   if(is.null(attr(model, "class")) ||  attr(model, "class") != "bp_model"){
     stop("model must be a bp_model object!")
   }
-  if(!is.vector(filename) || !is.character(filename)){
+  if(!is.na(filename) && (!is.vector(filename) || !is.character(filename))){
     stop("filename should be a character vector!")
   }
   nfunc <- length(model$func_deps)
@@ -121,7 +151,11 @@ generate <- function(model, priors, filename)
     # convert the expression
     exprn <- model$func_deps[[i]]
     stanstr <- exp_to_stan(exprn, model$nparams, model$ndep)
-    funcs[i] <- sprintf("\t\tr_mat[%d, p_vec[%d]] = %s;\n", i, i, stanstr)
+    if(!simple_bd){
+      funcs[i] <- sprintf("\t\tr_mat[%d, p_vec[%d]] = %s;\n", i, i, stanstr)
+    }else{
+      funcs[i] <- sprintf("\t\tr_mat[%d, i] = %s;\n", i, stanstr)
+    }
   }
 
   for (p in 1:nprior)
@@ -130,8 +164,30 @@ generate <- function(model, priors, filename)
     priorStrs[p] <- parse[1]
     declStrs[p] <- parse[2]
   }
-  write(sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
-                                                                collapse = ""), paste(priorStrs, collapse = "")), filename)
+  if(simple_bd){
+    if(!all(model$e_mat == matrix(c(2,0),ncol=1))){
+      stop("model is not a simple birth-death process!")
+    }
+    model_str = sprintf(STAN_TEMPLATE_SIMPLE_BD, paste(declStrs, collapse = ""), paste(funcs, 
+                                                                collapse = ""), paste(priorStrs, collapse = ""))
+  }
+  else{
+    if(noise_model){
+      if(ncol(model$e_mat) == 1){
+        stop("observational noise models are not available for one-type processes")
+      }
+      model_str = sprintf(STAN_TEMPLATE_MULTITYPE_NOISE, paste(declStrs, collapse = ""), paste(funcs, 
+                                                                collapse = ""), paste(priorStrs, collapse = ""))
+    }
+    else{
+      model_str = sprintf(STAN_TEMPLATE_MULTITYPE, paste(declStrs, collapse = ""), paste(funcs, 
+                                                                collapse = ""), paste(priorStrs, collapse = ""))
+    }
+  }
+  if(!is.na(filename)){
+    write(model_str, filename)
+  }
+  return(model_str)
 }
 
 #' takes simple mathematical R expressions and turns them into a specific type of Stan code to fill in the template
@@ -402,7 +458,6 @@ validate_prior_dist <- function(prior){
 #' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
 #' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
 #' @return a new \code{prior_dist} object
-#' @export
 new_prior_dist <- function(name, params, bounds = NA){
   return(structure(list(name = name, params = params, bounds = bounds), class = "prior_dist"))
 }
@@ -413,6 +468,8 @@ new_prior_dist <- function(name, params, bounds = NA){
 #' @param params parameters for the prior distribution. Should match the number and constrains imposed by the distribution name.
 #' @param bounds a lower and upper bound for the parameter. This restricts the range in which sampling occurs. If left as NA, no bounds are imposed
 #' @return a new \code{prior_dist} object in the arguments specify a valid distribution. Throws an error otherwise.
+#' 
+#' @export
 prior_dist <- function(name, params, bounds = NA){
   if(!is.character(name)){
     stop("prior name must be a string!")
@@ -440,8 +497,28 @@ check_exceeded_treedepth <- function(fit, max_depth = 10) {
   n = length(treedepths[sapply(treedepths, function(x) x == max_depth)])
   N = length(treedepths)
   
-  print(sprintf('%s of %s iterations saturated the maximum tree depth of %s (%s%%)',
+  return(sprintf('%s of %s iterations saturated the maximum tree depth of %s (%s%%)',
                 n, N, max_depth, 100 * n / N))
   if (n > 0)
-    print('  Run again with max_depth set to a larger value to avoid saturation')
+    return('  Run again with max_depth set to a larger value to avoid saturation')
+}
+
+# Checks the potential scale reduction factors
+check_rhat <- function(fit) {
+  fit_summary <- rstan::summary(fit, probs = c(0.5))$summary
+  N <- dim(fit_summary)[[1]]
+  
+  no_warning <- TRUE
+  for (n in 1:N) {
+    rhat <- fit_summary[,6][n]
+    if ((rhat > 1.1 || is.infinite(rhat)) && !is.nan(rhat)) {
+      print(sprintf('Rhat for parameter %s is %s!',
+                    rownames(fit_summary)[n], rhat))
+      no_warning <- FALSE
+    }
+  }
+  if (no_warning)
+    return('Rhat looks reasonable for all parameters')
+  else
+    return('Rhat above 1.1 indicates that the chains very likely have not mixed')
 }

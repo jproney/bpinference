@@ -1,10 +1,8 @@
 *.rds
+*.rda
 *.RDS
 .RData
-data
-MNIST-data
 .Rdata
 .Rhistory
-*.stan
-stanfiles/
 inst/doc
+*.tex

@@ -44,7 +44,7 @@ calculate_moments <- function(e_mat,p_vec,r_vec,z0_vec,tf){
   #Diff EQ: m_mat(t) = exp(At)
   a_mat <-  lamb*(b_mat - diag(ntype))
   m_mat <- expm::expm(a_mat*tf)
-  
+
   c_mat <- array(rep(0,ntype**3), c(ntype, ntype, ntype)); #matrix of second derivatives of offspring PGF
   
   for(i in 1:ntype){

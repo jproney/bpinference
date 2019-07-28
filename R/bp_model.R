@@ -82,3 +82,16 @@ bp_model <- function(e_mat, p_vec, func_deps, nparam, ndep)
   return(validate_bp_model(new_bp_model(e_mat, p_vec, func_deps, nparam, ndep)))
 }
 
+
+#' Convenience constructor for building a simple 1-type birth-death process
+#' 
+#' @param func_deps A vector of expressions encoding how each rate depends on the parameters of the model and a set of dependent variables.
+#' @param nparam The number of parameters in the model
+#' @param ndep The number of dependent variables which influence the rates of the model
+#' @return A new branching process model object if the parameters passed are valid. Otherwise an exception is thrown.
+#' @export
+bp_model_simple_birth_death <- function(func_deps, nparam, ndep){
+  e_mat = matrix(c(2,0),ncol=1)
+  p_vec = c(1,1)
+  return(validate_bp_model(new_bp_model(e_mat, p_vec, func_deps, nparam, ndep)))
+}

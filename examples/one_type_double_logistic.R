@@ -19,7 +19,7 @@ simulation_data <- bpsims(mod, simulation_params, z0, times, rep(20,6), c_mat)
 
 dat <- stan_data_from_simulation(simulation_data, mod)
 
-generate(mod, priors, "one_type_double_logistic.stan")
+stan_code = generate(mod, priors)
 
 options(mc.cores = parallel::detectCores())
 
@@ -28,6 +28,5 @@ ranges[3,] <- c(5,15)
 ranges[7,] <- c(5,15)
 init <-  uniform_initialize(ranges, 4)
 
-stan_mod <- rstan::stan_model(file = "one_type_double_logistic.stan")
+stan_mod <- rstan::stan_model(model_code =  stan_code)
 fit.data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
-file.remove("one_type_double_logistic.stan")

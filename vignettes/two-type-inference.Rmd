@@ -1,6 +1,6 @@
 ---
 title: "two-type-inference"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{two-type-inference}
   %\VignetteEngine{knitr::rmarkdown}
@@ -18,9 +18,7 @@ In this vignette, we consider the problem of inferring birth, death, and mutatio
 First we load the `bpinference` package.
 
 ```{r setup}
-library(ggplot2)
-devtools::load_all()
-library(rstan)
+library(bpinference)
 ```
 
 Next, we define the structure of our model. For details on how this works see `first-model.Rmd`.
@@ -60,14 +58,14 @@ init <- uniform_initialize(ranges, 4)
 
 options(mc.cores = parallel::detectCores())
 stan_mod <- stan_model(file = "two_type_inference.stan")
-fit_data <- sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
+fit_data <- sampling(stan_mod, data = stan_dat, control = list(adapt_delta = 0.95), chains = 4,
+                     refresh = 1, init =init, iter=3000,warmup=1000)
 samples <- data.frame(extract(fit_data))
 ```
 
 Let's visualize our posteriors. We'll do this using violin plots:
 
 ```{r}
-library(reshape)
-samp_df = melt(samples[,1:6])
+samp_df = reshape::melt(samples[,1:6])
 ggplot(samp_df, aes(x=factor(variable),y=value)) + geom_violin() + geom_hline(yintercept = .2) + geom_hline(yintercept = .1) + geom_hline(yintercept = .05) + geom_hline(yintercept = .25)
 ```
