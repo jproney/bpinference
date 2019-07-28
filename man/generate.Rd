@@ -4,7 +4,8 @@
 \alias{generate}
 \title{Generate a Stan file for inferring the model parameters}
 \usage{
-generate(model, priors, filename)
+generate(model, priors, filename = NA, simple_bd = FALSE,
+  noise_model = F)
 }
 \arguments{
 \item{model}{The \code{bpmodel} object from which to generate the Stan file}
@@ -13,6 +14,9 @@ generate(model, priors, filename)
 Each entry in the list should be a names list of the form list(name="normal",params=c(0,1),bounds=(-100,100))}
 
 \item{filename}{The name of the file in which to store the model. Should end in ".stan"}
+}
+\value{
+a string containing the model code
 }
 \description{
 Generate a Stan file for inferring the model parameters

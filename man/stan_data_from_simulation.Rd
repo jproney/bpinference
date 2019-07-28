@@ -4,12 +4,14 @@
 \alias{stan_data_from_simulation}
 \title{Helper function for piping simulation output into inference engine}
 \usage{
-stan_data_from_simulation(sim_data, model)
+stan_data_from_simulation(sim_data, model, simple_bd = FALSE)
 }
 \arguments{
 \item{sim_data}{simulation data as returned from \code{bpsims}}
 
 \item{model}{the \code{bpmodel} object the produced the data}
+
+\item{simple_bd}{= logical value indicating whether or not the model is a simple birth-death process. If TRUE, a simpler data list will be returned}
 }
 \value{
 A data list to pass to the Stan sampling function

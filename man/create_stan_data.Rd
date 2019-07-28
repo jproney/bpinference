@@ -4,7 +4,8 @@
 \alias{create_stan_data}
 \title{function to generate a stan input list from population data}
 \usage{
-create_stan_data(model, final_pop, init_pop, times, c_mat = NA)
+create_stan_data(model, final_pop, init_pop, times, c_mat = NA,
+  simple_bd = FALSE)
 }
 \arguments{
 \item{model}{The branching process model being estimated}
@@ -16,6 +17,8 @@ create_stan_data(model, final_pop, init_pop, times, c_mat = NA)
 \item{times}{= the length of time elapsing between each initial population and each final population. dimensions ndatapts x 1}
 
 \item{c_mat}{= matrix of dependent variables that vary from run to run. Dimensions ndatapts x ndep}
+
+\item{simple_bd}{= logical value indicating whether or not the model is a simple birth-death process. If TRUE, a simpler data list will be returned}
 }
 \value{
 A data list to pass to the Stan sampling function
