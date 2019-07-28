@@ -127,7 +127,7 @@ stan_data_from_simulation <- function(sim_data, model, simple_bd = FALSE)
 #' 
 #' @return a string containing the model code
 #' @export
-generate <- function(model, priors, filename = NA, simple_bd = FALSE)
+generate <- function(model, priors, filename = NA, simple_bd = FALSE, noise_model = F)
 {
   if(is.null(attr(model, "class")) ||  attr(model, "class") != "bp_model"){
     stop("model must be a bp_model object!")
@@ -169,11 +169,20 @@ generate <- function(model, priors, filename = NA, simple_bd = FALSE)
       stop("model is not a simple birth-death process!")
     }
     model_str = sprintf(STAN_TEMPLATE_SIMPLE_BD, paste(declStrs, collapse = ""), paste(funcs, 
-                                                                             collapse = ""), paste(priorStrs, collapse = ""))
+                                                                collapse = ""), paste(priorStrs, collapse = ""))
   }
   else{
-    model_str = sprintf(STAN_TEMPLATE, paste(declStrs, collapse = ""), paste(funcs, 
+    if(noise_model){
+      if(ncol(model$e_mat) == 1){
+        stop("observational noise models are not available for one-type processes")
+      }
+      model_str = sprintf(STAN_TEMPLATE_MULTITYPE_NOISE, paste(declStrs, collapse = ""), paste(funcs, 
                                                                 collapse = ""), paste(priorStrs, collapse = ""))
+    }
+    else{
+      model_str = sprintf(STAN_TEMPLATE_MULTITYPE, paste(declStrs, collapse = ""), paste(funcs, 
+                                                                collapse = ""), paste(priorStrs, collapse = ""))
+    }
   }
   if(!is.na(filename)){
     write(model_str, filename)
