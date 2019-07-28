@@ -100,6 +100,7 @@ parameters{
     
 %s
     //END AUTO-GENERATED CODE FOR PARAMETER DECLARATIONS
+    real<lower=0> sigma_obs;
 }
 transformed parameters{
   matrix[nevents,ntypes] r_mat;
@@ -127,6 +128,7 @@ model{
 
 %s
   //END AUTO-GENERATED CODE FOR PRIORS
+  sigma_obs ~ normal(0,.1);
   
   for(i in 1:ndep_levels){
     moments[i] = integrate_ode_rk45(moment_ode, init_state, 0, times, theta[i], rdata, idata);
@@ -146,8 +148,7 @@ model{
         sigma_t[i,j] = temp[i,j] - init_pop[k]*(col(m_t,i).*col(m_t,j)); //subtract to get covariance from 2nd moment
       }
     }
-    //print(mu_t)
-    //print(sigma_t)
+
     //and finally...
     pop_vec[k] ~ multi_normal(mu_t, sigma_t + sigma_obs*diag_matrix(mu_t));
   }
