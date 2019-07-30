@@ -1,5 +1,5 @@
-devtools::load_all()
-detect_p = .9
+library(bpinference)
+detect_p = .65
 
 e_mat <-  rbind(c(2,0),c(0,1),c(0,0))
 p_vec <- c(1, 1, 2)

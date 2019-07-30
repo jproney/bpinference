@@ -49,7 +49,7 @@ create_stan_data <- function(model, final_pop, init_pop, times, c_mat = NA, simp
     ndep <- ncol(c_mat_unique)  #number of different dependent variables
     var_idx <- apply(c_mat, 1, function(r)
     {
-      which.min(abs(rowSums(sweep(c_mat_unique, 2, r))))
+      which.min(rowSums(abs(sweep(c_mat_unique, 2, r))))
     })  #indices of unique dependent variable combinations
   }
   
