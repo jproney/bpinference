@@ -15,7 +15,7 @@ simulation_dat <- bpsims(mod, simulation_params, z0, times, 50)
 
 dat <- stan_data_from_simulation(simulation_dat, mod)
 
-stan_code = generate(mod, priors)
+stan_code = generate(mod, priors, loo = T)
 
 options(mc.cores = parallel::detectCores())
 

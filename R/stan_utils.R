@@ -127,7 +127,7 @@ stan_data_from_simulation <- function(sim_data, model, simple_bd = FALSE)
 #' 
 #' @return a string containing the model code
 #' @export
-generate <- function(model, priors, filename = NA, simple_bd = FALSE, noise_model = F)
+generate <- function(model, priors, filename = NA, simple_bd = FALSE, noise_model = F, loo = F)
 {
   if(is.null(attr(model, "class")) ||  attr(model, "class") != "bp_model"){
     stop("model must be a bp_model object!")
@@ -170,6 +170,9 @@ generate <- function(model, priors, filename = NA, simple_bd = FALSE, noise_mode
     }
     model_str = sprintf(STAN_TEMPLATE_SIMPLE_BD, paste(declStrs, collapse = ""), paste(funcs, 
                                                                 collapse = ""), paste(priorStrs, collapse = ""))
+    if(loo){
+      model_str = paste(model_str, SIMPLE_BD_LOO_BLOCK)
+    }
   }
   else{
     if(noise_model){
@@ -182,6 +185,9 @@ generate <- function(model, priors, filename = NA, simple_bd = FALSE, noise_mode
     else{
       model_str = sprintf(STAN_TEMPLATE_MULTITYPE, paste(declStrs, collapse = ""), paste(funcs, 
                                                                 collapse = ""), paste(priorStrs, collapse = ""))
+    }
+    if(loo){
+      model_str = paste(model_str, MULTITYPE_LOO_BLOCK)
     }
   }
   if(!is.na(filename)){

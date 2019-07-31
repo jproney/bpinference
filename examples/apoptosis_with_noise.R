@@ -3,7 +3,7 @@ detect_p = .65
 
 e_mat <-  rbind(c(2,0),c(0,1),c(0,0))
 p_vec <- c(1, 1, 2)
-z0 <- c(1000,200) # initial population vector
+z0 <- c(1000,0) # initial population vector
 times <- seq(0,5)
 
 func_deps <- c('c[1]','c[2]', 'c[3]')
