@@ -489,6 +489,7 @@ prior_dist <- function(name, params, bounds = NA){
 # Functions below are from https://raw.githubusercontent.com/betanalpha/knitr_case_studies/master/qr_regression/stan_utility.R
 
 # Check transitions that ended with a divergence
+#' @export
 check_div <- function(fit) {
   sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
   divergent <- do.call(rbind, sampler_params)[,'divergent__']
@@ -497,6 +498,7 @@ check_div <- function(fit) {
 }
 
 # Check transitions that ended prematurely due to maximum tree depth limit
+#' @export
 check_exceeded_treedepth <- function(fit, max_depth = 10) {
   sampler_params <- get_sampler_params(fit, inc_warmup=FALSE)
   treedepths <- do.call(rbind, sampler_params)[,'treedepth__']
@@ -510,6 +512,7 @@ check_exceeded_treedepth <- function(fit, max_depth = 10) {
 }
 
 # Checks the potential scale reduction factors
+#' @export
 check_rhat <- function(fit) {
   fit_summary <- rstan::summary(fit, probs = c(0.5))$summary
   N <- dim(fit_summary)[[1]]

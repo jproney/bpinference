@@ -5,7 +5,7 @@
 \title{Generate a Stan file for inferring the model parameters}
 \usage{
 generate(model, priors, filename = NA, simple_bd = FALSE,
-  noise_model = F)
+  noise_model = F, loo = F)
 }
 \arguments{
 \item{model}{The \code{bpmodel} object from which to generate the Stan file}
