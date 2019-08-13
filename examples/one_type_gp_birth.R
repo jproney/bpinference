@@ -25,4 +25,4 @@ ranges[3,] <- c(5,15)
 init <- uniform_initialize(ranges, 4)
 
 stan_mod <- rstan::stan_model(file = "one_type_gp.stan")
-fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1, init =init)
+fit_data <- rstan::sampling(stan_mod, data = dat, control = list(adapt_delta = 0.95), chains = 4, refresh = 1)
