@@ -16,21 +16,26 @@ transformed data{
 parameters{
     //BEGIN AUTO-GENERATED CODE FOR PARAMETER DECLARATIONS
     
-	vector<lower=0, upper=5>[ndep_levels] birth;
-	vector<lower=0, upper=5>[ndep_levels] death;
+	vector[ndep_levels] birth_tilde;
+	vector[ndep_levels] death_tilde;
 	
 	real<lower=0> rho_b;
 	real<lower=0> alpha_b;
-	real<lower=0> sigma_b;
-	
+
 	real<lower=0> rho_d;
 	real<lower=0> alpha_d;
-	real<lower=0> sigma_d;
 
 
     //END AUTO-GENERATED CODE FOR PARAMETER DECLARATIONS
 }
 transformed parameters{
+  matrix[ndep_levels, ndep_levels] K_b = cov_exp_quad(function_var, alpha_b, rho_b) + diag_matrix(rep_vector(1e-8, ndep_levels));
+  matrix[ndep_levels, ndep_levels] L_K_b = cholesky_decompose(K_b);
+  matrix[ndep_levels, ndep_levels] K_d = cov_exp_quad(function_var, alpha_d, rho_d) + diag_matrix(rep_vector(1e-8, ndep_levels));
+  matrix[ndep_levels, ndep_levels] L_K_d = cholesky_decompose(K_d);
+  vector<lower=0>[ndep_levels] birth = exp(L_K_b * birth_tilde); 
+  vector<lower=0>[ndep_levels] death = exp(L_K_d * death_tilde); 
+  
   matrix[2,ndep_levels] r_mat;
   for(i in 1:ndep_levels){
     //BEGIN AUTO-GENERATED CODE FOR FUNCTIONAL DEPENDENCIES
@@ -44,39 +49,16 @@ transformed parameters{
 }
 model{
   
-  matrix[ndep_levels, ndep_levels] L_K_b;
-  matrix[ndep_levels, ndep_levels] K_b = cov_exp_quad(function_var, alpha_b, rho_b);
-  real sq_sigma_b = square(sigma_b);
-  matrix[ndep_levels, ndep_levels] L_K_d;
-  matrix[ndep_levels, ndep_levels] K_d = cov_exp_quad(function_var, alpha_d, rho_d);
-  real sq_sigma_d = square(sigma_d);
-
-  // diagonal elements
-  for (n in 1:ndep_levels){
-    K_b[n, n] = K_b[n, n] + sq_sigma_b;
-  }
-  
-  L_K_b = cholesky_decompose(K_b);
 
   rho_b ~ inv_gamma(5, 5);
   alpha_b ~ std_normal();
-  sigma_b ~ std_normal();
 
-  birth ~ multi_normal_cholesky(mu, L_K_b);
+  birth_tilde ~ std_normal();
   
-
-  // diagonal elements
-  for (n in 1:ndep_levels){
-    K_d[n, n] = K_d[n, n] + sq_sigma_d;
-  }
-  
-  L_K_d = cholesky_decompose(K_d);
-
   rho_d ~ inv_gamma(5, 5);
   alpha_d ~ std_normal();
-  sigma_d ~ std_normal();
 
-  death ~ multi_normal_cholesky(mu, L_K_d);
+  death_tilde ~ std_normal();
 
   
   for(k in 1:ndatapts){
