@@ -1,12 +1,13 @@
 #' Simulate multi-type Markov branching process
 #'
-#' @param e_mat The matrix of birth events that can occur in the brnaching process. Dimensions \code{nevents} x \code{ntypes}
+#' @param e_mat The matrix of birth events that can occur in the branching process. Dimensions \code{nevents} x \code{ntypes}
 #' @param p_vec A vector containing the parent type for each of the birth events in \code{e_mat}. Dimensions \code{nevents} x 1
-#' @param r_vec A vector containing the rate at which each of the birth events in \code{e_mat} occurs. Dimensions \code{nevents} x 1
+#' @param r_func A function of time comupting the vector containing the rate at which each of the birth events in \code{e_mat} occurs at time t.
+#' @param r_func_ub A function of time computing upper bounds for the event rates after time t
 #' @param z0_vec The initial population vector at time 0. Dimensions \code{ntypes} x 1
 #' @param times The timepoints at which to record the population
 #' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
-bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
+bp_td <- function(e_mat, r_fun, r_fun_ub, p_vec, z0_vec, times)
 {
   # z0_vec = inital population vector, times = vector of timepoints to record
   tf <- times[length(times)]
@@ -17,39 +18,32 @@ bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
   zt_mat[1, ] <- z0_vec
   z <- z0_vec
   
-  # Expand the rate matrix
-  R_prime <- matrix(rep(0, nevents * ntypes), c(nevents, ntypes))
-  R_prime[cbind(1:nevents, p_vec)] <- r_vec
-  
-  while (t < tf)
+  while (t < tf & sum(z) > 0)
   {
-    event_rates <- R_prime %*% z  #multiply rates by pop sizes
-    lambda <- sum(event_rates)  #combined rate at which stuff is happening
-    if (lambda == 0)
-    {
-      # extinction
-      zt_mat[times[times > t], ] <- rep(tail(zt_mat[rowSums(zt_mat) >= 0, ], 
-                                         1), sum(times > t))  #fill the rest of the vector with last  datapoint
-      return(out)
+    #Compute the time of the next event by simulating a NHPP arrival with the thinning method
+    accept <- F
+    t_next <- t
+    while(!accept && t_next < tf){
+      total_ub <- sum(r_fun_ub(t_next)*z[p_vec])
+      t_next <- t_next + rexp(1,total_ub)
+      y <- runif(1,0,r_fun_ub(t_next)*z[p_vec])
+      if(y < sum(r_fun(t_next)*z[p_vec])){
+        accept <- T
+      }
     }
     
-    dt <- rexp(1, lambda)  #time until SOMETHING happends, don't know what yet
+    event_rates <- r_fun(t_next)*z[p_vec]  #multiply rates by pop sizes
     
     event <- which.max(rmultinom(1, 1, event_rates))  #choose which event happened according to probabilities
-    if (event > nevents)
-    {
-      print(event_rates)
-      print(event)
-    }
     increment <- e_mat[event, ]
     z <- z + increment  #add in the new offspring
     
     parent <- p_vec[event]
     z[parent] <- z[parent] - 1  #kill the parent
     
-    times_to_update <- (t < times) & (t + dt >= times)
+    times_to_update <- (t < times) & (t_next >= times)
     zt_mat[times_to_update, ] <- rep(z, sum(times_to_update))
-    t <- t + dt
+    t <- t_next
   }
   
   return(zt_mat)
@@ -66,7 +60,7 @@ bp <- function(e_mat, r_vec, p_vec, z0_vec, times)
 #' @return A matrix with the population vectors at each timepoint. Dimensions \code{ntimes} x \code{ntypes}
 #'
 #' @export
-bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
+bpsims_td <- function(model, theta, z0_vec, times, reps, c_mat = NA)
 {
   if(attr(model, "class") != "bp_model"){
     stop("model must be a bp_model object!")
@@ -112,12 +106,12 @@ bpsims <- function(model, theta, z0_vec, times, reps, c_mat = NA)
       for (j in 1:nrow(model$e_mat))
       {
         r_vec[j] <- eval(model$func_deps[[j]], envir = list(c = theta, 
-                                                        x = c_mat[i, ]))
+                                                            x = c_mat[i, ]))
       }
       x <- array(replicate(reps[i], bp(model$e_mat, r_vec, model$p_vec, z0_vec, times)),c(length(times),length(z0_vec), reps[i]))
       for (k in 1:reps[i])
       {
-
+        
         pop <- matrix(x[, , k], ncol = ncol(c_mat))
         dep = matrix(rep(c_mat[i, ], length(times)), ncol = ncol(c_mat))
         z <- rbind(z, data.frame(cbind(times = times, rep = curr_rep, 
