@@ -26,7 +26,7 @@ bp_td <- function(e_mat, r_fun, r_fun_ub, p_vec, z0_vec, times)
     while(!accept && t_next < tf){
       total_ub <- sum(r_fun_ub(t_next)*z[p_vec])
       t_next <- t_next + rexp(1,total_ub)
-      y <- runif(1,0,r_fun_ub(t_next)*z[p_vec])
+      y <- runif(1,0, sum(r_fun_ub(t_next)*z[p_vec]))
       if(y < sum(r_fun(t_next)*z[p_vec])){
         accept <- T
       }
