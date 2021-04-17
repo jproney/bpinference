@@ -2,7 +2,7 @@
 
 This R package makes the estimation of Continuous Time Markov Branching processes easy. By taking advantage of the approximate normality of branching processes with large starting populations, accurate parameter inference is possible for arbitrarily complex multi-type processes. In addition, the package allows for branching process parameters to have arbitrary functional relationships with any number of environmental variables. This makes it easy to infer the relationship between cell kinetics and drug doses in pharmacodynamics experiments, for example.
 
-## Getting Started
+## Installing
 
 To install `bpinference`, first install the R `devtools` package:
 ```
