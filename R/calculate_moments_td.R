@@ -35,7 +35,7 @@ calculate_moments_td <- function(e_mat,p_vec,r_func, z0_vec,tf){
   
   #state is mega-vector like in stan ODE function
   second_moment_de <- function(t, state, params){
-    s = t
+    s = tf - t
     r_vec = r_func(s)
     r_prime_mat <- matrix(rep(0,nrow(e_mat)*ntype), c(nrow(e_mat),ntype))
     r_prime_mat[cbind(1:nrow(e_mat), p_vec)] = r_vec
